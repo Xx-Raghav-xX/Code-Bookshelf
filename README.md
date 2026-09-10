@@ -85,10 +85,8 @@ npx serve .
 
 ## 🌐 Hosting & Deployment
 
-Code Bookshelf can be hosted for free on any static host:
-- **GitHub Pages**: Go to Repo > Settings > Pages > Select `main` branch root (`/`).
-- **Netlify**: Drag and drop the project folder onto [app.netlify.com/drop](https://app.netlify.com/drop).
-- **Vercel**: Run `npx vercel` in the project directory.
+Code Bookshelf is currently hosted on vercel as:
+code-bookshelf.vercel.app
 
 ---
 
