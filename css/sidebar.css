@@ -1,0 +1,165 @@
+/* Sidebar Navigation Drawer Component Styling */
+#sidebar-mount,
+.keep-sidebar {
+  width: var(--sidebar-width);
+  height: 100%;
+  background-color: var(--bg-sidebar);
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  padding-bottom: 16px;
+  padding-right: 12px;
+  transition: width var(--transition-speed) ease-in-out, padding var(--transition-speed) ease-in-out, background-color var(--transition-speed) ease;
+  user-select: none;
+  flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Dark Mode Background Enforcement */
+body.dark-theme #sidebar-mount,
+body.dark-theme .keep-sidebar {
+  background-color: #202124 !important;
+}
+
+/* Collapsed Sidebar State */
+#sidebar-mount.collapsed,
+.keep-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+  padding-right: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+/* Navigation Item Base */
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 12px 0 24px;
+  border-radius: 0 24px 24px 0;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.nav-item-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 32px;
+  color: var(--icon-color);
+  transition: margin-right var(--transition-speed) ease-in-out, color 0.15s ease;
+}
+
+#sidebar-mount.collapsed .nav-item-icon,
+.keep-sidebar.collapsed .nav-item-icon {
+  margin-right: 0;
+}
+
+.nav-item-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.nav-item-label {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--text-primary);
+  opacity: 1;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+#sidebar-mount.collapsed .nav-item-label,
+.keep-sidebar.collapsed .nav-item-label {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+}
+
+/* Hover & Active States */
+.nav-item:hover {
+  background-color: var(--hover-bg-grey);
+}
+
+.nav-item.active {
+  background-color: var(--active-bg-yellow);
+  color: var(--text-primary);
+}
+
+.nav-item.active .nav-item-icon {
+  color: var(--text-primary);
+}
+
+.nav-item.active .nav-item-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.nav-item.active:hover {
+  background-color: #fce8b2; /* Light mode active hover */
+}
+
+/* Dark Theme Specific Overrides for Sidebar */
+body.dark-theme .nav-item {
+  color: var(--text-secondary);
+}
+
+body.dark-theme .nav-item .nav-item-label {
+  color: var(--text-primary);
+}
+
+body.dark-theme .nav-item.active {
+  background-color: #41331c;
+  color: #feefc3;
+}
+
+body.dark-theme .nav-item.active .nav-item-icon,
+body.dark-theme .nav-item.active .nav-item-label {
+  color: #feefc3;
+}
+
+body.dark-theme .nav-item.active:hover {
+  background-color: #524023;
+}
+
+/* Bottom Footer Link */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+#sidebar-mount.collapsed .sidebar-footer,
+.keep-sidebar.collapsed .sidebar-footer {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.footer-link {
+  font-family: var(--font-family);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
