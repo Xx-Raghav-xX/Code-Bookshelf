@@ -12,18 +12,18 @@
 class CodeCompilerEngine {
   constructor() {
     this.judge0PrimaryUrl = 'https://ce.judge0.com/submissions?wait=true';
-    
+
     // Judge0 API Language Mappings
     this.languageMap = {
       javascript: { id: 63, label: 'JavaScript (Node.js)', badge: 'JS' },
-      python:     { id: 71, label: 'Python 3', badge: 'PY' },
-      java:       { id: 62, label: 'Java (OpenJDK)', badge: 'JAVA' },
-      c:          { id: 50, label: 'C (GCC)', badge: 'C' },
-      cpp:        { id: 54, label: 'C++ (G++)', badge: 'C++' },
-      sql:        { id: 82, label: 'SQL (SQLite)', badge: 'SQL' },
-      rust:       { id: 73, label: 'Rust', badge: 'RS' },
-      go:         { id: 60, label: 'Go', badge: 'GO' },
-      html:       { id: 0,  label: 'HTML/CSS', badge: 'HTML' }
+      python: { id: 71, label: 'Python 3', badge: 'PY' },
+      java: { id: 62, label: 'Java (OpenJDK)', badge: 'JAVA' },
+      c: { id: 50, label: 'C (GCC)', badge: 'C' },
+      cpp: { id: 54, label: 'C++ (G++)', badge: 'C++' },
+      sql: { id: 82, label: 'SQL (SQLite)', badge: 'SQL' },
+      rust: { id: 73, label: 'Rust', badge: 'RS' },
+      go: { id: 60, label: 'Go', badge: 'GO' },
+      html: { id: 0, label: 'HTML/CSS', badge: 'HTML' }
     };
   }
 
@@ -85,7 +85,7 @@ class CodeCompilerEngine {
       }
 
       const data = await response.json();
-      
+
       const stdout = data.stdout ? data.stdout.trim() : '';
       const stderr = data.stderr ? data.stderr.trim() : '';
       const compileOutput = data.compile_output ? data.compile_output.trim() : '';
@@ -328,6 +328,3 @@ class CodeCompilerEngine {
 }
 
 window.codeCompiler = new CodeCompilerEngine();
-
-
-
