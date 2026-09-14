@@ -213,6 +213,12 @@ class GoogleAuthEngine {
             </svg>
             Google Client ID Settings
           </button>
+          <button class="popover-item" id="config-firebase-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+            </svg>
+            Cloud Database Settings
+          </button>
           <button class="popover-item popover-item-danger" id="logout-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
               <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
@@ -264,6 +270,7 @@ class GoogleAuthEngine {
     const popover = document.getElementById('user-profile-popover');
     const logoutBtn = document.getElementById('logout-btn');
     const configBtn = document.getElementById('config-client-id-btn');
+    const firebaseBtn = document.getElementById('config-firebase-btn');
 
     if (profileBtn && popover) {
       profileBtn.addEventListener('click', (e) => {
@@ -289,6 +296,44 @@ class GoogleAuthEngine {
       configBtn.addEventListener('click', () => {
         this.promptClientIdInput();
       });
+    }
+
+    if (firebaseBtn) {
+      firebaseBtn.addEventListener('click', () => {
+        this.promptFirebaseConfigInput();
+      });
+    }
+  }
+
+  /**
+   * Prompt user to configure Firebase Cloud DB Settings
+   */
+  promptFirebaseConfigInput() {
+    const currentConfig = window.cloudDb && window.cloudDb.config
+      ? JSON.stringify(window.cloudDb.config, null, 2)
+      : '';
+
+    const input = prompt(
+      'Enter your Firebase Configuration JSON object (apiKey, projectId, etc.):',
+      currentConfig
+    );
+
+    if (input !== null) {
+      try {
+        if (!input.trim()) {
+          window.cloudDb.saveConfig(null);
+          alert('Firebase Cloud Database sync disabled.');
+          return;
+        }
+        const parsed = JSON.parse(input);
+        if (window.cloudDb.saveConfig(parsed)) {
+          alert('Firebase Cloud Database configuration saved successfully! Cloud sync is active.');
+        } else {
+          alert('Invalid Firebase configuration object. Please ensure apiKey and projectId are provided.');
+        }
+      } catch (err) {
+        alert('Invalid JSON format. Please paste a valid JSON object.');
+      }
     }
   }
 

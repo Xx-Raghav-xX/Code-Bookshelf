@@ -66,6 +66,10 @@ class NotesManager {
   saveToStorage() {
     try {
       localStorage.setItem(this.getNotesStorageKey(), JSON.stringify(this.notes));
+      const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+      if (userId && window.cloudDb && window.cloudDb.isReady()) {
+        window.cloudDb.batchSaveNotes(userId, this.notes);
+      }
     } catch (e) {
       console.error('Failed to save notes:', e);
     }
@@ -111,11 +115,24 @@ class NotesManager {
       this.labels = this.loadLabelsFromStorage();
       this.renderSidebarLabels();
       this.render();
+
       const user = e.detail ? e.detail.user : null;
       if (user) {
         this.showToast(`Welcome back, ${user.name}!`);
+        if (window.cloudDb && window.cloudDb.isReady()) {
+          window.cloudDb.listenToUserNotes(user.id, (cloudNotes) => {
+            if (Array.isArray(cloudNotes) && cloudNotes.length > 0) {
+              this.notes = cloudNotes;
+              localStorage.setItem(this.getNotesStorageKey(), JSON.stringify(this.notes));
+              this.render();
+            }
+          });
+        }
       } else {
         this.showToast('Signed out. Switched to Guest notebook.');
+        if (window.cloudDb) {
+          window.cloudDb.stopListening();
+        }
       }
     });
 
