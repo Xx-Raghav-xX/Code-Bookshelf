@@ -96,11 +96,16 @@ class CodeCompilerEngine {
         payload.stdin = this.encodeBase64(stdin.trim());
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(this.judge0PrimaryUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const resText = await response.text();
@@ -133,8 +138,10 @@ class CodeCompilerEngine {
       };
     } catch (err) {
       console.error('Online Compiler Error:', err);
+      const isTimeout = err.name === 'AbortError';
+      const userErrMsg = isTimeout ? 'Execution request timed out after 15 seconds.' : err.message;
       return {
-        output: `Error connecting to Compiler Engine: ${err.message}\nPlease verify your internet connection.`,
+        output: `Error connecting to Compiler Engine: ${userErrMsg}\nPlease verify your code and internet connection.`,
         isError: true
       };
     }

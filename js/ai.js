@@ -39,6 +39,9 @@ class AICodeAssistant {
           headers['Authorization'] = `Bearer ${this.apiKey}`;
         }
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
         const response = await fetch(url, {
           method: 'POST',
           headers: headers,
@@ -49,8 +52,10 @@ class AICodeAssistant {
             ],
             model: model,
             jsonMode: false
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         const text = await response.text();
         if (!response.ok || text.includes('reached its budget') || text.includes('Queue full') || text.includes('"error":')) {
@@ -83,6 +88,9 @@ You can add your own 100% free **Google Gemini API Key** in Settings (⚙️):
 
     for (const model of models) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
         const response = await fetch(url, {
           method: 'POST',
@@ -97,8 +105,10 @@ You can add your own 100% free **Google Gemini API Key** in Settings (⚙️):
                 ]
               }
             ]
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           const errText = await response.text();
