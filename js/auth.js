@@ -37,10 +37,16 @@ class GoogleAuthEngine {
    * Initialize Google Auth and setup UI elements
    */
   init() {
-    document.addEventListener('DOMContentLoaded', () => {
+    const start = () => {
       this.setupUI();
       this.initGoogleIdentity();
-    });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
   }
 
   /**
@@ -155,20 +161,18 @@ class GoogleAuthEngine {
    * Setup Auth UI container in the header
    */
   setupUI() {
-    const headerRight = document.querySelector('.header-right');
-    if (!headerRight) return;
+    let authContainer = document.getElementById('auth-container');
+    if (!authContainer) {
+      const headerRight = document.querySelector('.header-right');
+      if (!headerRight) return;
 
-    // Check if auth container already exists
-    if (document.getElementById('auth-container')) return;
+      authContainer = document.createElement('div');
+      authContainer.id = 'auth-container';
+      authContainer.className = 'auth-container';
+      headerRight.appendChild(authContainer);
+    }
 
-    const authContainer = document.createElement('div');
-    authContainer.id = 'auth-container';
-    authContainer.className = 'auth-container';
-
-    // Append to header-right before settings button or at the end
-    headerRight.appendChild(authContainer);
     this.profileContainer = authContainer;
-
     this.renderUI();
   }
 
