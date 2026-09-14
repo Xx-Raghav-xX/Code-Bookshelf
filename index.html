@@ -109,10 +109,16 @@
             </div>
 
             <!-- Search Filter Popover Menu -->
-            <div class="popover-menu" id="search-filter-popover" style="width: 240px; padding: 12px;">
+            <div class="popover-menu" id="search-filter-popover" style="width: 250px; padding: 12px;">
               <div class="popover-title" style="margin-bottom: 8px;">Filter Notes By:</div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: var(--text-primary);">
+                <span>⭐ Favorites Only</span>
+                <input type="checkbox" id="filter-starred-checkbox" style="cursor: pointer; width: 16px; height: 16px;">
+              </div>
+
               <div class="filter-section-label">Programming Language</div>
-              <select class="language-select-dropdown" id="filter-language-select" style="width: 100%; margin-bottom: 12px;">
+              <select class="language-select-dropdown" id="filter-language-select" style="width: 100%; margin-bottom: 10px;">
                 <option value="all">All Languages</option>
                 <option value="javascript">JavaScript (JS)</option>
                 <option value="python">Python 3 (PY)</option>
@@ -126,12 +132,15 @@
               </select>
 
               <div class="filter-section-label">Note Type</div>
-              <select class="language-select-dropdown" id="filter-type-select" style="width: 100%; margin-bottom: 12px;">
+              <select class="language-select-dropdown" id="filter-type-select" style="width: 100%; margin-bottom: 10px;">
                 <option value="all">All Types</option>
                 <option value="code">Code Snippets Only</option>
                 <option value="checklist">Checklists Only</option>
                 <option value="text">Standard Text Only</option>
               </select>
+
+              <div class="filter-section-label" style="margin-bottom: 4px;">Tags (Multi-select)</div>
+              <div id="filter-tags-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 80px; overflow-y: auto; margin-bottom: 12px; padding: 4px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-search);"></div>
 
               <button class="creator-btn-close" id="clear-filters-btn" style="width: 100%; text-align: center; justify-content: center; background-color: var(--hover-bg); color: var(--text-primary);">Reset Filters</button>
             </div>
@@ -222,6 +231,14 @@
               </svg>
             </span>
             <span class="nav-item-label">Reminders</span>
+          </a>
+          <a href="#favorites" class="nav-item" data-nav="favorites">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+            </span>
+            <span class="nav-item-label">Favorites</span>
           </a>
 
           <!-- Dynamic Labels Container in Sidebar -->
@@ -506,11 +523,18 @@
     <div class="modal-box" id="edit-note-box">
       <div class="creator-title-row">
         <input type="text" class="note-input-title" id="edit-note-title" placeholder="Title">
-        <button class="icon-btn pin-btn" id="edit-note-pin-btn">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M17 4v7l2 3v2h-6v5l-1 1-1-1v-5H5v-2l2-3V4c0-.55.45-1 1-1h8c.55 0 1 .45 1 1z"></path>
-          </svg>
-        </button>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="icon-btn star-btn" id="edit-note-star-btn" title="Favorite note" aria-label="Favorite note" style="color: var(--text-secondary);">
+            <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="2" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+          </button>
+          <button class="icon-btn pin-btn" id="edit-note-pin-btn">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M17 4v7l2 3v2h-6v5l-1 1-1-1v-5H5v-2l2-3V4c0-.55.45-1 1-1h8c.55 0 1 .45 1 1z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
       <textarea class="note-input-body" id="edit-note-body" placeholder="Note"></textarea>
 

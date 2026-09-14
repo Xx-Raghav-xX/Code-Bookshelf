@@ -11,6 +11,8 @@ class NotesManager {
     this.isListView = localStorage.getItem('keep-list-view') === 'true';
     this.selectedLanguageFilter = 'all';
     this.selectedTypeFilter = 'all';
+    this.selectedTagFilters = [];
+    this.isStarredFilter = false;
     this.defaultCodeLanguage = localStorage.getItem('keep-default-lang') || 'javascript';
 
     // Note Creator State
@@ -143,6 +145,8 @@ class NotesManager {
   }
 
   initSearchFilterPopover() {
+    this.renderTagFilterChips();
+
     // 1. Toggle Filter Popover & Clear Action via Event Delegation
     document.addEventListener('click', (e) => {
       const filterBtn = e.target.closest('#search-filter-btn');
@@ -150,6 +154,7 @@ class NotesManager {
         e.stopPropagation();
         const filterPopover = document.getElementById('search-filter-popover');
         if (filterPopover) {
+          this.renderTagFilterChips();
           filterPopover.classList.toggle('active');
         }
         return;
@@ -160,10 +165,18 @@ class NotesManager {
         e.stopPropagation();
         this.selectedLanguageFilter = 'all';
         this.selectedTypeFilter = 'all';
+        this.selectedTagFilters = [];
+        this.isStarredFilter = false;
+
         const langSelect = document.getElementById('filter-language-select');
         const typeSelect = document.getElementById('filter-type-select');
+        const starredCheckbox = document.getElementById('filter-starred-checkbox');
+
         if (langSelect) langSelect.value = 'all';
         if (typeSelect) typeSelect.value = 'all';
+        if (starredCheckbox) starredCheckbox.checked = false;
+
+        this.renderTagFilterChips();
         this.updateFilterButtonBadge();
         const filterPopover = document.getElementById('search-filter-popover');
         if (filterPopover) filterPopover.classList.remove('active');
@@ -179,7 +192,7 @@ class NotesManager {
       }
     });
 
-    // 2. Filter Dropdowns Change Delegation
+    // 2. Filter Dropdowns & Checkbox Change Delegation
     document.addEventListener('change', (e) => {
       if (e.target && e.target.id === 'filter-language-select') {
         this.selectedLanguageFilter = e.target.value;
@@ -191,13 +204,63 @@ class NotesManager {
         this.updateFilterButtonBadge();
         this.render();
       }
+      if (e.target && e.target.id === 'filter-starred-checkbox') {
+        this.isStarredFilter = e.target.checked;
+        this.updateFilterButtonBadge();
+        this.render();
+      }
+    });
+  }
+
+  renderTagFilterChips() {
+    const container = document.getElementById('filter-tags-container');
+    if (!container) return;
+
+    const allTags = new Set();
+    this.notes.forEach(n => {
+      if (n.labels && Array.isArray(n.labels)) {
+        n.labels.forEach(l => allTags.add(l));
+      }
+    });
+
+    if (allTags.size === 0) {
+      container.innerHTML = `<span style="font-size: 11px; color: var(--text-secondary); padding: 4px;">No tags found</span>`;
+      return;
+    }
+
+    container.innerHTML = Array.from(allTags).map(tag => {
+      const isSelected = this.selectedTagFilters.includes(tag);
+      return `
+        <span class="tag-filter-chip ${isSelected ? 'selected' : ''}" data-filter-tag="${this.escapeHtml(tag)}" style="font-size: 11px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--border-color); background: ${isSelected ? 'var(--primary-yellow)' : 'var(--bg-primary)'}; color: ${isSelected ? '#202124' : 'var(--text-primary)'}; cursor: pointer; user-select: none; font-weight: ${isSelected ? '600' : 'normal'};">
+          #${this.escapeHtml(tag)}
+        </span>
+      `;
+    }).join('');
+
+    container.querySelectorAll('[data-filter-tag]').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = chip.getAttribute('data-filter-tag');
+        const idx = this.selectedTagFilters.indexOf(tag);
+        if (idx !== -1) {
+          this.selectedTagFilters.splice(idx, 1);
+        } else {
+          this.selectedTagFilters.push(tag);
+        }
+        this.renderTagFilterChips();
+        this.updateFilterButtonBadge();
+        this.render();
+      });
     });
   }
 
   updateFilterButtonBadge() {
     const filterBtn = document.getElementById('search-filter-btn');
     if (filterBtn) {
-      const hasFilter = this.selectedLanguageFilter !== 'all' || this.selectedTypeFilter !== 'all';
+      const hasFilter = this.selectedLanguageFilter !== 'all' || 
+                        this.selectedTypeFilter !== 'all' || 
+                        this.selectedTagFilters.length > 0 || 
+                        this.isStarredFilter;
       filterBtn.classList.toggle('has-filter', hasFilter);
     }
   }
@@ -1161,6 +1224,28 @@ class NotesManager {
     });
   }
 
+  toggleStar(id) {
+    const note = this.notes.find(n => n.id === id);
+    if (note) {
+      note.isStarred = !note.isStarred;
+      this.saveToStorage();
+      this.render();
+      this.showToast(note.isStarred ? 'Note added to Favorites ⭐' : 'Note removed from Favorites');
+    }
+  }
+
+  updateModalStarButton(isStarred) {
+    const starBtn = document.getElementById('edit-note-star-btn');
+    if (starBtn) {
+      starBtn.classList.toggle('starred', Boolean(isStarred));
+      starBtn.style.color = isStarred ? '#fbbc04' : 'var(--text-secondary)';
+      const path = starBtn.querySelector('path');
+      if (path) {
+        path.setAttribute('fill', isStarred ? '#fbbc04' : 'none');
+      }
+    }
+  }
+
   /**
    * Edit Note Modal Handlers
    */
@@ -1168,6 +1253,7 @@ class NotesManager {
     const modal = document.getElementById('edit-note-modal');
     const saveBtn = document.getElementById('save-edit-note-btn');
     const pinBtn = document.getElementById('edit-note-pin-btn');
+    const starBtn = document.getElementById('edit-note-star-btn');
     const modalRunBtn = document.getElementById('edit-modal-run-btn');
     const modalCopyBtn = document.getElementById('edit-modal-copy-btn');
     const modalDownloadBtn = document.getElementById('edit-modal-download-btn');
@@ -1193,6 +1279,21 @@ class NotesManager {
           if (note) {
             note.isPinned = !note.isPinned;
             pinBtn.classList.toggle('pinned', note.isPinned);
+          }
+        }
+      });
+    }
+
+    if (starBtn) {
+      starBtn.addEventListener('click', () => {
+        if (this.editingNoteId) {
+          const note = this.notes.find(n => n.id === this.editingNoteId);
+          if (note) {
+            note.isStarred = !note.isStarred;
+            this.updateModalStarButton(note.isStarred);
+            this.saveToStorage();
+            this.render();
+            this.showToast(note.isStarred ? 'Note added to Favorites ⭐' : 'Note removed from Favorites');
           }
         }
       });
@@ -1325,6 +1426,8 @@ class NotesManager {
     if (!modal || !titleInput || !bodyInput) return;
 
     if (historyDrawer) historyDrawer.style.display = 'none';
+
+    this.updateModalStarButton(note.isStarred);
 
     titleInput.value = note.title || '';
     bodyInput.value = note.body || '';
@@ -1810,12 +1913,17 @@ class NotesManager {
       if (this.currentView === 'archive') return n.isArchived && !n.isBinned;
       if (this.currentView === 'bin') return n.isBinned;
       if (this.currentView === 'reminders') return !n.isArchived && !n.isBinned && n.reminder;
+      if (this.currentView === 'favorites') return !n.isArchived && !n.isBinned && n.isStarred;
       if (this.currentView.startsWith('label_')) {
         const targetLabel = this.currentView.replace('label_', '');
         return !n.isArchived && !n.isBinned && n.labels && n.labels.includes(targetLabel);
       }
       return !n.isArchived && !n.isBinned;
     });
+
+    if (this.isStarredFilter) {
+      filtered = filtered.filter(n => n.isStarred);
+    }
 
     if (this.selectedLanguageFilter && this.selectedLanguageFilter !== 'all') {
       filtered = filtered.filter(n => n.isCode && n.codeLanguage === this.selectedLanguageFilter);
@@ -1831,16 +1939,38 @@ class NotesManager {
       }
     }
 
+    if (this.selectedTagFilters && this.selectedTagFilters.length > 0) {
+      filtered = filtered.filter(n => {
+        if (!n.labels || !Array.isArray(n.labels)) return false;
+        return this.selectedTagFilters.every(t => n.labels.includes(t));
+      });
+    }
+
     if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(n => 
-        (n.title && n.title.toLowerCase().includes(q)) || 
-        (n.body && n.body.toLowerCase().includes(q)) ||
-        (n.code && n.code.toLowerCase().includes(q)) ||
-        (n.codeLanguage && n.codeLanguage.toLowerCase().includes(q)) ||
-        (n.labels && n.labels.some(l => l.toLowerCase().includes(q))) ||
-        (n.checklistItems && n.checklistItems.some(i => i.text.toLowerCase().includes(q)))
-      );
+      const tokens = this.searchQuery.split(/\s+/).filter(Boolean);
+      const tagTokens = tokens.filter(t => t.startsWith('#')).map(t => t.replace(/^#/, '').toLowerCase());
+      const textTokens = tokens.filter(t => !t.startsWith('#')).map(t => t.toLowerCase());
+
+      filtered = filtered.filter(n => {
+        if (tagTokens.length > 0) {
+          const noteLabels = (n.labels || []).map(l => l.toLowerCase());
+          const matchAllTags = tagTokens.every(t => noteLabels.some(l => l.includes(t)));
+          if (!matchAllTags) return false;
+        }
+
+        if (textTokens.length > 0) {
+          const matchText = textTokens.every(q => 
+            (n.title && n.title.toLowerCase().includes(q)) || 
+            (n.body && n.body.toLowerCase().includes(q)) ||
+            (n.code && n.code.toLowerCase().includes(q)) ||
+            (n.codeLanguage && n.codeLanguage.toLowerCase().includes(q)) ||
+            (n.checklistItems && n.checklistItems.some(i => i.text.toLowerCase().includes(q)))
+          );
+          if (!matchText) return false;
+        }
+
+        return true;
+      });
     }
 
     const creatorWrapper = document.getElementById('note-creator-wrapper');
@@ -1860,15 +1990,27 @@ class NotesManager {
       return;
     }
 
-    const pinnedNotes = filtered.filter(n => n.isPinned);
-    const otherNotes = filtered.filter(n => !n.isPinned);
+    const starredNotes = filtered.filter(n => n.isStarred);
+    const pinnedNotes = filtered.filter(n => n.isPinned && !n.isStarred);
+    const otherNotes = filtered.filter(n => !n.isPinned && !n.isStarred);
 
     let html = '';
+
+    if (starredNotes.length > 0 && this.currentView === 'notes') {
+      html += `
+        <div class="notes-section">
+          <div class="section-heading">⭐ FAVORITES</div>
+          <div class="notes-grid">
+            ${starredNotes.map(n => this.renderCardHtml(n)).join('')}
+          </div>
+        </div>
+      `;
+    }
 
     if (pinnedNotes.length > 0 && this.currentView === 'notes') {
       html += `
         <div class="notes-section">
-          <div class="section-heading">PINNED</div>
+          <div class="section-heading">📌 PINNED</div>
           <div class="notes-grid">
             ${pinnedNotes.map(n => this.renderCardHtml(n)).join('')}
           </div>
@@ -1876,12 +2018,12 @@ class NotesManager {
       `;
     }
 
-    if (otherNotes.length > 0 || pinnedNotes.length > 0) {
+    if (otherNotes.length > 0 || (starredNotes.length === 0 && pinnedNotes.length === 0)) {
       html += `
         <div class="notes-section">
-          ${(pinnedNotes.length > 0 && this.currentView === 'notes') ? '<div class="section-heading">OTHERS</div>' : ''}
+          ${((starredNotes.length > 0 || pinnedNotes.length > 0) && this.currentView === 'notes') ? '<div class="section-heading">OTHERS</div>' : ''}
           <div class="notes-grid">
-            ${(pinnedNotes.length > 0 && this.currentView === 'notes' ? otherNotes : filtered).map(n => this.renderCardHtml(n)).join('')}
+            ${((starredNotes.length > 0 || pinnedNotes.length > 0) && this.currentView === 'notes' ? otherNotes : filtered).map(n => this.renderCardHtml(n)).join('')}
           </div>
         </div>
       `;
@@ -1895,6 +2037,7 @@ class NotesManager {
     if (this.searchQuery) return `No notes match "${this.searchQuery}"`;
     if (this.currentView === 'archive') return 'No archived notes';
     if (this.currentView === 'bin') return 'No notes in Bin';
+    if (this.currentView === 'favorites') return 'No favorited notes yet. Click the ⭐ star icon on any note card to add it to Favorites!';
     if (this.currentView === 'reminders') return 'Notes with upcoming reminders will appear here';
     if (this.currentView.startsWith('label_')) return `No notes with label "${this.currentView.replace('label_', '')}"`;
     return 'Notes you add appear here';
@@ -2023,12 +2166,21 @@ class NotesManager {
         <div class="note-card-header">
           ${note.title ? `<div class="note-card-title">${this.escapeHtml(note.title)}</div>` : '<div></div>'}
           ${!isBinView ? `
-            <div class="tooltip-container" data-tooltip="${note.isPinned ? 'Unpin note' : 'Pin note'}">
-              <button class="icon-btn pin-btn ${note.isPinned ? 'pinned' : ''}" data-action="pin" aria-label="Pin note">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M17 4v7l2 3v2h-6v5l-1 1-1-1v-5H5v-2l2-3V4c0-.55.45-1 1-1h8c.55 0 1 .45 1 1z"></path>
-                </svg>
-              </button>
+            <div style="display: flex; align-items: center; gap: 2px;">
+              <div class="tooltip-container" data-tooltip="${note.isStarred ? 'Remove from favorites' : 'Add to favorites'}">
+                <button class="icon-btn star-btn ${note.isStarred ? 'starred' : ''}" data-action="star" aria-label="Favorite note" style="color: ${note.isStarred ? '#fbbc04' : 'var(--text-secondary)'};">
+                  <svg viewBox="0 0 24 24" width="18" height="18" focusable="false">
+                    <path fill="${note.isStarred ? '#fbbc04' : 'none'}" stroke="currentColor" stroke-width="2" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="tooltip-container" data-tooltip="${note.isPinned ? 'Unpin note' : 'Pin note'}">
+                <button class="icon-btn pin-btn ${note.isPinned ? 'pinned' : ''}" data-action="pin" aria-label="Pin note">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M17 4v7l2 3v2h-6v5l-1 1-1-1v-5H5v-2l2-3V4c0-.55.45-1 1-1h8c.55 0 1 .45 1 1z"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
           ` : ''}
         </div>
@@ -2254,6 +2406,7 @@ class NotesManager {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const action = btn.getAttribute('data-action');
+          if (action === 'star') this.toggleStar(id);
           if (action === 'pin') this.togglePin(id);
           if (action === 'duplicate') this.duplicateNote(id);
           if (action === 'archive') this.archiveNote(id);
