@@ -11,7 +11,7 @@
 
 class CodeCompilerEngine {
   constructor() {
-    this.judge0PrimaryUrl = 'https://ce.judge0.com/submissions?wait=true';
+    this.judge0PrimaryUrl = 'https://ce.judge0.com/submissions?wait=true&base64_encoded=true';
 
     // Judge0 API Language Mappings
     this.languageMap = {
@@ -25,6 +25,28 @@ class CodeCompilerEngine {
       go: { id: 60, label: 'Go', badge: 'GO' },
       html: { id: 0, label: 'HTML/CSS', badge: 'HTML' }
     };
+  }
+
+  encodeBase64(str) {
+    if (!str) return '';
+    try {
+      return btoa(unescape(encodeURIComponent(str)));
+    } catch (e) {
+      return btoa(str);
+    }
+  }
+
+  decodeBase64(str) {
+    if (!str) return '';
+    try {
+      return decodeURIComponent(escape(atob(str)));
+    } catch (e) {
+      try {
+        return atob(str);
+      } catch (err) {
+        return str;
+      }
+    }
   }
 
   /**
@@ -66,12 +88,12 @@ class CodeCompilerEngine {
 
     try {
       const payload = {
-        source_code: sourceCode,
+        source_code: this.encodeBase64(sourceCode),
         language_id: targetLang.id
       };
 
       if (stdin && stdin.trim()) {
-        payload.stdin = stdin.trim();
+        payload.stdin = this.encodeBase64(stdin.trim());
       }
 
       const response = await fetch(this.judge0PrimaryUrl, {
@@ -81,15 +103,16 @@ class CodeCompilerEngine {
       });
 
       if (!response.ok) {
-        throw new Error(`Compiler API returned HTTP status ${response.status}`);
+        const resText = await response.text();
+        throw new Error(`HTTP status ${response.status}: ${resText.slice(0, 100)}`);
       }
 
       const data = await response.json();
 
-      const stdout = data.stdout ? data.stdout.trim() : '';
-      const stderr = data.stderr ? data.stderr.trim() : '';
-      const compileOutput = data.compile_output ? data.compile_output.trim() : '';
-      const message = data.message ? data.message.trim() : '';
+      const stdout = this.decodeBase64(data.stdout ? data.stdout.trim() : '');
+      const stderr = this.decodeBase64(data.stderr ? data.stderr.trim() : '');
+      const compileOutput = this.decodeBase64(data.compile_output ? data.compile_output.trim() : '');
+      const message = this.decodeBase64(data.message ? data.message.trim() : '');
       const duration = data.time ? `${parseFloat(data.time).toFixed(2)}s` : null;
 
       if (stdout) {
