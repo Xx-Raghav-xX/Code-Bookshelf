@@ -349,6 +349,199 @@ class NotesManager {
     }
   }
 
+  getActivityStorageKey() {
+    const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+    return userId ? `keep-activity-log-${userId}` : 'keep-activity-log';
+  }
+
+  loadActivityLog() {
+    try {
+      const data = localStorage.getItem(this.getActivityStorageKey());
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      console.error('Failed to load activity log:', e);
+      return {};
+    }
+  }
+
+  logActivity(count = 1) {
+    try {
+      const log = this.loadActivityLog();
+      const today = new Date().toISOString().slice(0, 10);
+      log[today] = (log[today] || 0) + count;
+      localStorage.setItem(this.getActivityStorageKey(), JSON.stringify(log));
+    } catch (e) {
+      console.error('Failed to log activity:', e);
+    }
+  }
+
+  calculateStreak(activityMap) {
+    let streak = 0;
+    const d = new Date();
+    const todayStr = d.toISOString().slice(0, 10);
+    
+    if (!activityMap[todayStr]) {
+      d.setDate(d.getDate() - 1);
+    }
+
+    while (true) {
+      const dateStr = d.toISOString().slice(0, 10);
+      if (activityMap[dateStr] && activityMap[dateStr] > 0) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  renderAnalyticsDashboard() {
+    const activityLog = this.loadActivityLog();
+    const codeNotes = this.notes.filter(n => n.isCode && !n.isBinned);
+
+    let totalLines = 0;
+    const langLinesMap = {};
+    const langColors = {
+      javascript: '#f1e05a',
+      python: '#3572A5',
+      cpp: '#f34b7d',
+      c: '#555555',
+      java: '#b07219',
+      rust: '#dea584',
+      go: '#00ADD8',
+      sql: '#e38c00',
+      html: '#e34c26'
+    };
+
+    codeNotes.forEach(n => {
+      const lines = (n.code || '').split('\n').length;
+      totalLines += lines;
+      const lang = (n.codeLanguage || 'javascript').toLowerCase();
+      langLinesMap[lang] = (langLinesMap[lang] || 0) + lines;
+    });
+
+    const activeStreak = this.calculateStreak(activityLog);
+    const totalActivities = Object.values(activityLog).reduce((a, b) => a + b, 0);
+    const sortedLangs = Object.keys(langLinesMap).sort((a, b) => langLinesMap[b] - langLinesMap[a]);
+
+    let barSegmentsHtml = '';
+    let langListHtml = '';
+
+    if (totalLines > 0 && sortedLangs.length > 0) {
+      sortedLangs.forEach(lang => {
+        const lines = langLinesMap[lang];
+        const pct = Math.round((lines / totalLines) * 100);
+        const color = langColors[lang] || '#a855f7';
+        const formattedLang = lang === 'cpp' ? 'C++' : (lang === 'javascript' ? 'JS' : lang.toUpperCase());
+
+        barSegmentsHtml += `<div class="language-stacked-segment" style="width: ${pct}%; background-color: ${color};" data-tooltip="${formattedLang}: ${lines} lines (${pct}%)"></div>`;
+
+        langListHtml += `
+          <div class="language-item">
+            <div class="language-dot" style="background-color: ${color};"></div>
+            <span class="language-name">${formattedLang}</span>
+            <span class="language-percent">${pct}%</span>
+          </div>
+        `;
+      });
+    } else {
+      barSegmentsHtml = `<div class="language-stacked-segment" style="width: 100%; background-color: var(--border-color);" data-tooltip="No code stored yet"></div>`;
+      langListHtml = `<span style="font-size: 12px; color: var(--text-secondary);">No code snippets created yet.</span>`;
+    }
+
+    const heatmapCells = [];
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 364);
+
+    let curr = new Date(startDate);
+    while (curr <= endDate) {
+      const dateStr = curr.toISOString().slice(0, 10);
+      const count = activityLog[dateStr] || 0;
+
+      let level = 0;
+      if (count >= 10) level = 4;
+      else if (count >= 6) level = 3;
+      else if (count >= 3) level = 2;
+      else if (count >= 1) level = 1;
+
+      const formattedDate = curr.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      const tooltipText = `${count} activity action${count === 1 ? '' : 's'} on ${formattedDate}`;
+
+      heatmapCells.push(`<div class="heatmap-cell level-${level}" data-tooltip="${this.escapeHtml(tooltipText)}"></div>`);
+
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    return `
+      <div class="analytics-dashboard-container">
+        <div class="analytics-header">
+          <h2>📊 Developer Analytics & Activity Dashboard</h2>
+          <p>Real-time telemetry on code volume, language distribution, and daily programming streak</p>
+        </div>
+
+        <div class="analytics-stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-title">Stored Code Snippets</div>
+            <div class="stat-card-value">${codeNotes.length}</div>
+            <div class="stat-card-sub text-muted">Across all active notebooks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Total Lines of Code</div>
+            <div class="stat-card-value">${totalLines.toLocaleString()}</div>
+            <div class="stat-card-sub text-muted">Written & persisted in Keep</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Coding Activity Streak</div>
+            <div class="stat-card-value">🔥 ${activeStreak} <span style="font-size: 16px; font-weight: normal;">Days</span></div>
+            <div class="stat-card-sub text-muted">Current consecutive streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Total Activity Actions</div>
+            <div class="stat-card-value">⚡ ${totalActivities}</div>
+            <div class="stat-card-sub text-muted">Snippet additions & executions</div>
+          </div>
+        </div>
+
+        <div class="analytics-section-card">
+          <h3 class="analytics-section-title">🎨 Language Distribution</h3>
+          <div class="language-stacked-bar">
+            ${barSegmentsHtml}
+          </div>
+          <div class="language-list-grid">
+            ${langListHtml}
+          </div>
+        </div>
+
+        <div class="analytics-section-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+            <h3 class="analytics-section-title" style="margin: 0;">🟩 365-Day Activity Heatmap</h3>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Total: <strong>${totalActivities} actions</strong> past year
+            </div>
+          </div>
+
+          <div class="heatmap-grid-container">
+            <div class="heatmap-grid">
+              ${heatmapCells.join('')}
+            </div>
+          </div>
+
+          <div class="heatmap-legend">
+            <span>Less</span>
+            <div class="heatmap-cell level-0"></div>
+            <div class="heatmap-cell level-1"></div>
+            <div class="heatmap-cell level-2"></div>
+            <div class="heatmap-cell level-3"></div>
+            <div class="heatmap-cell level-4"></div>
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   init() {
     this.initToast();
     this.initViewToggle();
@@ -2361,6 +2554,7 @@ class NotesManager {
           note.lastOutputIsError = Boolean(res.isError);
           note.lastOutputIsHtml = Boolean(res.isHtml);
           note.executionTime = res.executionTime || null;
+          this.logActivity(1);
           this.saveToStorage();
           this.renderModalOutput(note);
         } catch (err) {
@@ -2966,6 +3160,7 @@ class NotesManager {
 
     this.extractAndAssignHashtags(newNote);
     this.notes.unshift(newNote);
+    this.logActivity(1);
     this.saveToStorage();
     this.render();
   }
@@ -3091,6 +3286,14 @@ class NotesManager {
     const mainContainer = document.getElementById('notes-workspace');
     if (!mainContainer) return;
 
+    const creatorWrapper = document.getElementById('note-creator-wrapper');
+
+    if (this.currentView === 'analytics') {
+      if (creatorWrapper) creatorWrapper.style.display = 'none';
+      mainContainer.innerHTML = this.renderAnalyticsDashboard();
+      return;
+    }
+
     let collectionBannerHtml = '';
     if (this.currentView.startsWith('collection_')) {
       const colId = this.currentView.replace('collection_', '');
@@ -3199,7 +3402,6 @@ class NotesManager {
       });
     }
 
-    const creatorWrapper = document.getElementById('note-creator-wrapper');
     if (creatorWrapper) {
       creatorWrapper.style.display = (this.currentView === 'archive' || this.currentView === 'bin') ? 'none' : 'flex';
     }
@@ -3615,6 +3817,7 @@ class NotesManager {
             targetNote.lastOutputIsError = Boolean(res.isError);
             targetNote.lastOutputIsHtml = Boolean(res.isHtml);
             targetNote.executionTime = res.executionTime || null;
+            this.logActivity(1);
             this.saveToStorage();
             this.render();
           } catch (err) {
