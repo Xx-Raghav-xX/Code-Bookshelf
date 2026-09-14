@@ -1344,6 +1344,134 @@ class NotesManager {
       });
     }
 
+    // AI Code Assistant Handlers
+    const aiExplainBtn = document.getElementById('edit-ai-explain-btn');
+    const aiOptimizeBtn = document.getElementById('edit-ai-optimize-btn');
+    const aiGenerateBtn = document.getElementById('edit-ai-generate-btn');
+    const aiPromptInput = document.getElementById('edit-ai-prompt-input');
+    const aiDrawer = document.getElementById('edit-ai-results-drawer');
+    const aiDrawerTitle = document.getElementById('ai-drawer-title');
+    const aiDrawerContent = document.getElementById('ai-drawer-content');
+    const applyAiCodeBtn = document.getElementById('apply-ai-code-btn');
+    const closeAiDrawerBtn = document.getElementById('close-ai-drawer-btn');
+
+    let pendingAiCode = null;
+
+    const openAiDrawer = (title, contentHtml, codeToApply = null) => {
+      if (!aiDrawer) return;
+      if (aiDrawerTitle) aiDrawerTitle.textContent = title;
+      if (aiDrawerContent) aiDrawerContent.innerHTML = contentHtml;
+      aiDrawer.style.display = 'block';
+
+      if (codeToApply && applyAiCodeBtn) {
+        pendingAiCode = codeToApply;
+        applyAiCodeBtn.style.display = 'inline-block';
+      } else if (applyAiCodeBtn) {
+        pendingAiCode = null;
+        applyAiCodeBtn.style.display = 'none';
+      }
+    };
+
+    if (closeAiDrawerBtn && aiDrawer) {
+      closeAiDrawerBtn.addEventListener('click', () => {
+        aiDrawer.style.display = 'none';
+      });
+    }
+
+    if (applyAiCodeBtn) {
+      applyAiCodeBtn.addEventListener('click', () => {
+        if (pendingAiCode) {
+          const editCodeInput = document.getElementById('edit-code-input');
+          if (editCodeInput) {
+            editCodeInput.value = pendingAiCode;
+            if (editCodeInput._cm) {
+              editCodeInput._cm.setValue(pendingAiCode);
+            }
+          }
+          this.showToast('Applied AI code to snippet!');
+          if (aiDrawer) aiDrawer.style.display = 'none';
+        }
+      });
+    }
+
+    if (aiExplainBtn) {
+      aiExplainBtn.addEventListener('click', async () => {
+        const editCodeInput = document.getElementById('edit-code-input');
+        const langSelect = document.getElementById('edit-language-select');
+        const code = editCodeInput ? editCodeInput.value.trim() : '';
+        const lang = langSelect ? langSelect.value : 'javascript';
+
+        if (!code) {
+          this.showToast('Please write or paste code first!');
+          return;
+        }
+
+        openAiDrawer('💡 AI Line-by-Line Code Explanation', '<span class="compiling-spinner"></span> Analyzing snippet with AI...');
+
+        try {
+          const explanation = await window.aiAssistant.explainCode(code, lang);
+          openAiDrawer('💡 AI Line-by-Line Code Explanation', this.formatMarkdownAndMath(explanation));
+        } catch (err) {
+          openAiDrawer('💡 AI Explanation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+        }
+      });
+    }
+
+    if (aiOptimizeBtn) {
+      aiOptimizeBtn.addEventListener('click', async () => {
+        const editCodeInput = document.getElementById('edit-code-input');
+        const langSelect = document.getElementById('edit-language-select');
+        const code = editCodeInput ? editCodeInput.value.trim() : '';
+        const lang = langSelect ? langSelect.value : 'javascript';
+
+        if (!code) {
+          this.showToast('Please write or paste code first!');
+          return;
+        }
+
+        openAiDrawer('⚡ AI Code Refactor & Optimization', '<span class="compiling-spinner"></span> Optimizing and refactoring snippet...');
+
+        try {
+          const result = await window.aiAssistant.optimizeCode(code, lang);
+          const refactoredCode = window.aiAssistant.parseCodeBlock(result);
+          openAiDrawer('⚡ AI Code Refactor & Optimization', this.formatMarkdownAndMath(result), refactoredCode);
+        } catch (err) {
+          openAiDrawer('⚡ AI Optimization Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+        }
+      });
+    }
+
+    const runAiGenerate = async () => {
+      const promptText = aiPromptInput ? aiPromptInput.value.trim() : '';
+      const langSelect = document.getElementById('edit-language-select');
+      const lang = langSelect ? langSelect.value : 'javascript';
+
+      if (!promptText) {
+        this.showToast('Please enter an AI prompt!');
+        return;
+      }
+
+      openAiDrawer('✨ AI Code Generator', '<span class="compiling-spinner"></span> Generating code snippet from prompt...');
+
+      try {
+        const result = await window.aiAssistant.generateSnippet(promptText, lang);
+        const generatedCode = window.aiAssistant.parseCodeBlock(result);
+        openAiDrawer('✨ AI Code Generator', this.formatMarkdownAndMath(result), generatedCode);
+      } catch (err) {
+        openAiDrawer('✨ AI Generation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+      }
+    };
+
+    if (aiGenerateBtn) aiGenerateBtn.addEventListener('click', runAiGenerate);
+    if (aiPromptInput) {
+      aiPromptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runAiGenerate();
+        }
+      });
+    }
+
     if (modalRunBtn) {
       modalRunBtn.addEventListener('click', async () => {
         if (!this.editingNoteId || !window.codeCompiler) return;
@@ -1422,10 +1550,12 @@ class NotesManager {
     const editCodeInput = document.getElementById('edit-code-input');
     const editStdinInput = document.getElementById('edit-stdin-input');
     const historyDrawer = document.getElementById('edit-history-drawer');
+    const aiDrawer = document.getElementById('edit-ai-results-drawer');
 
     if (!modal || !titleInput || !bodyInput) return;
 
     if (historyDrawer) historyDrawer.style.display = 'none';
+    if (aiDrawer) aiDrawer.style.display = 'none';
 
     this.updateModalStarButton(note.isStarred);
 
@@ -1530,6 +1660,11 @@ class NotesManager {
             <div class="code-terminal-header">
               <span>Output ${note.executionTime ? `(${note.executionTime})` : ''}</span>
               <div class="code-header-right-actions">
+                ${note.lastOutputIsError ? `
+                  <button class="code-action-icon-btn" id="modal-ai-fix-btn" title="Fix bug with AI" style="background: rgba(234, 67, 53, 0.15); color: #ea4335; border: 1px solid rgba(234, 67, 53, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                    🐛 Fix with AI
+                  </button>
+                ` : ''}
                 <button class="code-action-icon-btn" id="modal-copy-output-btn" title="Copy output">
                   <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 </button>
@@ -1539,6 +1674,45 @@ class NotesManager {
             <div class="code-terminal-body">${this.escapeHtml(note.lastOutput)}</div>
           </div>
         `;
+      }
+
+      const aiFixBtn = document.getElementById('modal-ai-fix-btn');
+      if (aiFixBtn) {
+        aiFixBtn.addEventListener('click', async () => {
+          const aiDrawer = document.getElementById('edit-ai-results-drawer');
+          const aiDrawerTitle = document.getElementById('ai-drawer-title');
+          const aiDrawerContent = document.getElementById('ai-drawer-content');
+          const applyAiCodeBtn = document.getElementById('apply-ai-code-btn');
+
+          if (aiDrawer && aiDrawerTitle && aiDrawerContent) {
+            aiDrawerTitle.textContent = '🐛 AI Bug Fix & Diagnosis';
+            aiDrawerContent.innerHTML = '<span class="compiling-spinner"></span> Diagnosing execution bug and generating fix...';
+            aiDrawer.style.display = 'block';
+            if (applyAiCodeBtn) applyAiCodeBtn.style.display = 'none';
+
+            try {
+              const result = await window.aiAssistant.fixBug(note.code, note.codeLanguage, note.lastOutput, note.stdin || '');
+              const fixedCode = window.aiAssistant.parseCodeBlock(result);
+              aiDrawerContent.innerHTML = this.formatMarkdownAndMath(result);
+              if (fixedCode && applyAiCodeBtn) {
+                applyAiCodeBtn.style.display = 'inline-block';
+                const onApply = () => {
+                  const editCodeInput = document.getElementById('edit-code-input');
+                  if (editCodeInput) {
+                    editCodeInput.value = fixedCode;
+                    if (editCodeInput._cm) editCodeInput._cm.setValue(fixedCode);
+                  }
+                  this.showToast('Applied AI bug fix!');
+                  aiDrawer.style.display = 'none';
+                  applyAiCodeBtn.removeEventListener('click', onApply);
+                };
+                applyAiCodeBtn.addEventListener('click', onApply);
+              }
+            } catch (err) {
+              aiDrawerContent.innerHTML = `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`;
+            }
+          }
+        });
       }
 
       const clearBtn = document.getElementById('modal-clear-output-btn');
