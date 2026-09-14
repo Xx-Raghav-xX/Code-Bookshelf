@@ -10,7 +10,7 @@ class GoogleAuthEngine {
     this.STORAGE_KEY_CLIENT_ID = 'code_bookshelf_google_client_id';
 
     // Default or stored Google Client ID
-    this.clientId = localStorage.getItem(this.STORAGE_KEY_CLIENT_ID) || '';
+    this.clientId = localStorage.getItem(this.STORAGE_KEY_CLIENT_ID) || '525974404403-aroqjeh205tt8idobhga6nqft4bbh9q5.apps.googleusercontent.com';
     this.currentUser = this.loadStoredUser();
 
     // DOM Elements
