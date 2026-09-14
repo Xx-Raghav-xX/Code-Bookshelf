@@ -1217,6 +1217,32 @@ class NotesManager {
       });
     }
 
+    const historyBtn = document.getElementById('edit-modal-history-btn');
+    const historyDrawer = document.getElementById('edit-history-drawer');
+    const closeHistoryBtn = document.getElementById('close-history-drawer-btn');
+
+    if (historyBtn && historyDrawer) {
+      historyBtn.addEventListener('click', () => {
+        if (!this.editingNoteId) return;
+        const note = this.notes.find(n => n.id === this.editingNoteId);
+        if (!note) return;
+
+        const isVisible = historyDrawer.style.display !== 'none';
+        if (isVisible) {
+          historyDrawer.style.display = 'none';
+        } else {
+          historyDrawer.style.display = 'block';
+          this.renderVersionHistory(note);
+        }
+      });
+    }
+
+    if (closeHistoryBtn && historyDrawer) {
+      closeHistoryBtn.addEventListener('click', () => {
+        historyDrawer.style.display = 'none';
+      });
+    }
+
     if (modalRunBtn) {
       modalRunBtn.addEventListener('click', async () => {
         if (!this.editingNoteId || !window.codeCompiler) return;
@@ -1294,8 +1320,11 @@ class NotesManager {
     const editLanguageSelect = document.getElementById('edit-language-select');
     const editCodeInput = document.getElementById('edit-code-input');
     const editStdinInput = document.getElementById('edit-stdin-input');
+    const historyDrawer = document.getElementById('edit-history-drawer');
 
     if (!modal || !titleInput || !bodyInput) return;
+
+    if (historyDrawer) historyDrawer.style.display = 'none';
 
     titleInput.value = note.title || '';
     bodyInput.value = note.body || '';
@@ -1334,6 +1363,47 @@ class NotesManager {
     }
 
     modal.classList.add('active');
+  }
+
+  renderVersionHistory(note) {
+    const container = document.getElementById('history-items-list');
+    if (!container) return;
+
+    if (!note.revisions || note.revisions.length === 0) {
+      container.innerHTML = `
+        <div style="font-size: 11px; color: var(--text-secondary); text-align: center; padding: 12px 0;">
+          No previous code versions saved yet.<br>Snapshots are recorded automatically whenever you edit and save code snippets.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = note.revisions.map((rev, idx) => `
+      <div class="history-item-card" style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--bg-primary);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">📅 ${this.escapeHtml(rev.formattedDate || rev.timestamp)}</span>
+          <button class="restore-version-btn" data-rev-index="${idx}" style="background: var(--primary-yellow); color: #202124; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Restore Version</button>
+        </div>
+        <pre style="font-family: monospace; font-size: 11px; color: var(--text-primary); background: var(--bg-search); padding: 6px; border-radius: 4px; max-height: 70px; overflow-y: auto; white-space: pre-wrap; margin: 0;">${this.escapeHtml(rev.code)}</pre>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.restore-version-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-rev-index'), 10);
+        const rev = note.revisions[idx];
+        if (rev) {
+          const editCodeInput = document.getElementById('edit-code-input');
+          if (editCodeInput) {
+            editCodeInput.value = rev.code;
+            if (editCodeInput._cm) {
+              editCodeInput._cm.setValue(rev.code);
+            }
+          }
+          this.showToast(`Restored snippet version from ${rev.formattedDate || 'history'}`);
+        }
+      });
+    });
   }
 
   renderModalOutput(note) {
@@ -1408,9 +1478,28 @@ class NotesManager {
       if (note) {
         note.title = titleInput ? titleInput.value.trim() : '';
         if (note.isCode) {
-          note.codeLanguage = editLanguageSelect ? editLanguageSelect.value : 'javascript';
-          note.code = editCodeInput ? editCodeInput.value.trim() : '';
-          note.stdin = editStdinInput ? editStdinInput.value : '';
+          const oldCode = note.code;
+          const newCode = editCodeInput ? editCodeInput.value.trim() : '';
+          const newLang = editLanguageSelect ? editLanguageSelect.value : 'javascript';
+          const newStdin = editStdinInput ? editStdinInput.value : '';
+
+          if (oldCode && oldCode !== newCode) {
+            if (!note.revisions) note.revisions = [];
+            const now = new Date();
+            note.revisions.unshift({
+              timestamp: now.toISOString(),
+              formattedDate: now.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+              code: oldCode,
+              language: note.codeLanguage || 'javascript'
+            });
+            if (note.revisions.length > 20) {
+              note.revisions.pop();
+            }
+          }
+
+          note.codeLanguage = newLang;
+          note.code = newCode;
+          note.stdin = newStdin;
         } else {
           note.body = bodyInput ? bodyInput.value.trim() : '';
         }

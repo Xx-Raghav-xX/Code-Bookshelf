@@ -529,6 +529,9 @@
             <option value="html">HTML/CSS (Preview)</option>
           </select>
           <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="code-action-icon-btn" id="edit-modal-history-btn" title="Version History">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7.07 7.07 0 0 1-6-3.4L5.54 17A8.93 8.93 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8z"/></svg>
+            </button>
             <button class="code-action-icon-btn" id="edit-modal-copy-btn" title="Copy code">
               <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
             </button>
@@ -552,6 +555,15 @@
           <textarea class="code-stdin-input" id="edit-stdin-input" placeholder="Enter input values for your script (e.g. 42 or Hello World)..." spellcheck="false" rows="2" style="width: 100%; font-family: monospace; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-search); color: var(--search-text); resize: vertical;"></textarea>
         </div>
         <div id="edit-modal-output-container"></div>
+
+        <!-- Version History Drawer -->
+        <div class="code-history-drawer" id="edit-history-drawer" style="display: none; margin-top: 8px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-search);">
+          <div class="history-header-row" style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+            <span>📜 Snippet Version History</span>
+            <button class="chip-remove-btn" id="close-history-drawer-btn">✕</button>
+          </div>
+          <div id="history-items-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto;"></div>
+        </div>
       </div>
 
       <div class="note-chips-row" id="edit-note-chips"></div>
