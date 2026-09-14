@@ -43,9 +43,19 @@ class NotesManager {
     this.paletteFilteredItems = [];
   }
 
+  getNotesStorageKey() {
+    const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+    return userId ? `keep-notes-${userId}` : 'keep-notes';
+  }
+
+  getLabelsStorageKey() {
+    const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+    return userId ? `keep-labels-${userId}` : 'keep-labels';
+  }
+
   loadFromStorage() {
     try {
-      const data = localStorage.getItem('keep-notes');
+      const data = localStorage.getItem(this.getNotesStorageKey());
       return data ? JSON.parse(data) : [];
     } catch (e) {
       console.error('Failed to load notes:', e);
@@ -55,7 +65,7 @@ class NotesManager {
 
   saveToStorage() {
     try {
-      localStorage.setItem('keep-notes', JSON.stringify(this.notes));
+      localStorage.setItem(this.getNotesStorageKey(), JSON.stringify(this.notes));
     } catch (e) {
       console.error('Failed to save notes:', e);
     }
@@ -63,7 +73,7 @@ class NotesManager {
 
   loadLabelsFromStorage() {
     try {
-      const data = localStorage.getItem('keep-labels');
+      const data = localStorage.getItem(this.getLabelsStorageKey());
       return data ? JSON.parse(data) : ['Personal', 'Work', 'Ideas'];
     } catch (e) {
       return ['Personal', 'Work', 'Ideas'];
@@ -72,7 +82,7 @@ class NotesManager {
 
   saveLabelsToStorage() {
     try {
-      localStorage.setItem('keep-labels', JSON.stringify(this.labels));
+      localStorage.setItem(this.getLabelsStorageKey(), JSON.stringify(this.labels));
     } catch (e) {
       console.error('Failed to save labels:', e);
     }
@@ -94,6 +104,20 @@ class NotesManager {
     this.initEditLabelsModal();
     this.initEditNoteModal();
     this.initCommandPalette();
+
+    // Listen for auth changes to dynamically switch notebook storage
+    window.addEventListener('auth:change', (e) => {
+      this.notes = this.loadFromStorage();
+      this.labels = this.loadLabelsFromStorage();
+      this.renderSidebarLabels();
+      this.render();
+      const user = e.detail ? e.detail.user : null;
+      if (user) {
+        this.showToast(`Welcome back, ${user.name}!`);
+      } else {
+        this.showToast('Signed out. Switched to Guest notebook.');
+      }
+    });
 
     this.renderSidebarLabels();
     this.applyListViewState();

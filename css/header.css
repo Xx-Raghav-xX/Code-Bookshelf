@@ -197,3 +197,167 @@
   color: var(--text-secondary);
   letter-spacing: -0.5px;
 }
+
+/* Google Auth & User Profile Styles */
+.auth-container {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  position: relative;
+}
+
+.btn-google-signin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Google Sans', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-google-signin:hover {
+  background-color: var(--hover-bg);
+  border-color: #dadce0;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+}
+
+.user-profile-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.user-profile-btn:hover {
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-avatar-initial {
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 50%;
+}
+
+.user-profile-popover {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 260px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  z-index: 1100;
+}
+
+.profile-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-popover-header .user-avatar-img,
+.profile-popover-header .user-avatar-initial {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  overflow: hidden;
+}
+
+.profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.auth-provider-badge {
+  display: inline-block;
+  font-size: 10px;
+  background-color: rgba(52, 168, 83, 0.15);
+  color: #34a853;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.popover-divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 8px 0;
+}
+
+.popover-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.popover-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.popover-item-danger {
+  color: #ea4335;
+}
+
+.popover-item-danger:hover {
+  background-color: rgba(234, 67, 53, 0.1);
+}
+
