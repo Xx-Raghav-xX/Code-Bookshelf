@@ -164,6 +164,18 @@ body.dark-theme .nav-item.active:hover {
   text-decoration: underline;
 }
 
+/* Custom Clean Scrollbar for Sidebar Drawer */
+#sidebar-mount::-webkit-scrollbar,
+.keep-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+#sidebar-mount::-webkit-scrollbar-thumb,
+.keep-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(154, 160, 166, 0.3);
+  border-radius: 4px;
+}
+
 /* Sidebar Scrim Backdrop Overlay */
 .sidebar-scrim {
   position: fixed;
@@ -191,9 +203,14 @@ body.dark-theme .nav-item.active:hover {
     top: var(--header-height);
     left: 0;
     bottom: 0;
+    width: 280px;
+    max-width: 82vw;
     height: calc(100vh - var(--header-height));
     z-index: 1050;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    padding-top: 12px;
+    padding-bottom: 24px;
+    padding-right: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     transform: translateX(0);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color var(--transition-speed) ease;
   }
@@ -202,7 +219,16 @@ body.dark-theme .nav-item.active:hover {
   #sidebar-mount.collapsed,
   .keep-sidebar.collapsed {
     transform: translateX(-100%);
-    width: var(--sidebar-width);
+    width: 280px;
+  }
+
+  .nav-item {
+    height: 48px;
+    padding: 0 16px 0 20px;
+  }
+
+  .nav-item-icon {
+    margin-right: 24px;
   }
 
   /* Show labels on mobile drawer */
@@ -219,4 +245,5 @@ body.dark-theme .nav-item.active:hover {
     display: block;
   }
 }
+
 
