@@ -23,6 +23,21 @@ class KeepNavigationComponent {
       this.menuToggleBtn.addEventListener('click', () => this.toggleSidebar());
     }
 
+    // Mobile Scrim Backdrop Listener
+    const scrim = document.getElementById('sidebar-scrim');
+    if (scrim) {
+      scrim.addEventListener('click', () => this.closeSidebarOnMobile());
+    }
+
+    // Default mobile sidebar state: collapsed (hidden off-screen)
+    if (window.innerWidth <= 768) {
+      this.isCollapsed = true;
+      const sidebarElem = document.getElementById('keep-sidebar') || document.getElementById('sidebar-mount');
+      const mountElem = document.getElementById('sidebar-mount');
+      if (sidebarElem) sidebarElem.classList.add('collapsed');
+      if (mountElem) mountElem.classList.add('collapsed');
+    }
+
     // Initialize Sub-Systems
     this.initNavLinks();
     this.initSearchBar();
@@ -36,11 +51,29 @@ class KeepNavigationComponent {
   toggleSidebar() {
     const sidebarElem = document.getElementById('keep-sidebar') || document.getElementById('sidebar-mount');
     const mountElem = document.getElementById('sidebar-mount');
+    const scrim = document.getElementById('sidebar-scrim');
 
     this.isCollapsed = !this.isCollapsed;
 
     if (sidebarElem) sidebarElem.classList.toggle('collapsed', this.isCollapsed);
     if (mountElem) mountElem.classList.toggle('collapsed', this.isCollapsed);
+
+    if (window.innerWidth <= 768 && scrim) {
+      scrim.classList.toggle('visible', !this.isCollapsed);
+    }
+  }
+
+  closeSidebarOnMobile() {
+    if (window.innerWidth <= 768) {
+      this.isCollapsed = true;
+      const sidebarElem = document.getElementById('keep-sidebar') || document.getElementById('sidebar-mount');
+      const mountElem = document.getElementById('sidebar-mount');
+      const scrim = document.getElementById('sidebar-scrim');
+
+      if (sidebarElem) sidebarElem.classList.add('collapsed');
+      if (mountElem) mountElem.classList.add('collapsed');
+      if (scrim) scrim.classList.remove('visible');
+    }
   }
 
   /**
@@ -55,6 +88,7 @@ class KeepNavigationComponent {
 
         const section = item.getAttribute('data-nav');
         this.onSectionChange(section);
+        this.closeSidebarOnMobile();
       });
     });
   }

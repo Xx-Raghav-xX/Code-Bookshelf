@@ -163,3 +163,60 @@ body.dark-theme .nav-item.active:hover {
   color: var(--text-primary);
   text-decoration: underline;
 }
+
+/* Sidebar Scrim Backdrop Overlay */
+.sidebar-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sidebar-scrim.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Mobile Sidebar Drawer Styles */
+@media (max-width: 768px) {
+  #sidebar-mount,
+  .keep-sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    height: calc(100vh - var(--header-height));
+    z-index: 1050;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transform: translateX(0);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color var(--transition-speed) ease;
+  }
+
+  /* Closed/Collapsed drawer on mobile slides off screen */
+  #sidebar-mount.collapsed,
+  .keep-sidebar.collapsed {
+    transform: translateX(-100%);
+    width: var(--sidebar-width);
+  }
+
+  /* Show labels on mobile drawer */
+  #sidebar-mount.collapsed .nav-item-label,
+  .keep-sidebar.collapsed .nav-item-label {
+    opacity: 1;
+    display: inline-block;
+  }
+
+  #sidebar-mount.collapsed .sidebar-footer,
+  .keep-sidebar.collapsed .sidebar-footer {
+    opacity: 1;
+    pointer-events: auto;
+    display: block;
+  }
+}
+
