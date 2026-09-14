@@ -15,11 +15,11 @@ class AICodeAssistant {
   }
 
   async callLLM(systemPrompt, userPrompt) {
-    if (this.apiKey) {
+    if (this.apiKey && this.apiKey.startsWith('AIzaSy')) {
       try {
         return await this.callGeminiAPI(systemPrompt, userPrompt);
       } catch (err) {
-        console.warn('Gemini API call failed, falling back to free Pollinations models:', err.message);
+        console.warn('Gemini API call failed, falling back to Pollinations:', err.message);
       }
     }
 
@@ -27,17 +27,21 @@ class AICodeAssistant {
   }
 
   async callPollinationsAPI(systemPrompt, userPrompt) {
-    const models = ['openai-fast', 'gpt-oss', 'openai'];
+    const models = ['openai', 'openai-fast', 'gpt-oss'];
     let lastErrMessage = '';
 
     for (const model of models) {
       try {
         const url = 'https://text.pollinations.ai/';
+        const headers = { 'Content-Type': 'application/json' };
+        
+        if (this.apiKey && !this.apiKey.startsWith('AIzaSy')) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`;
+        }
+
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: headers,
           body: JSON.stringify({
             messages: [
               { role: 'system', content: systemPrompt },
@@ -74,30 +78,46 @@ You can add your own 100% free **Google Gemini API Key** in Settings (⚙️):
   }
 
   async callGeminiAPI(systemPrompt, userPrompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: `${systemPrompt}\n\nUser Request:\n${userPrompt}` }
-            ]
-          }
-        ]
-      })
-    });
+    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    let lastErr = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error (HTTP ${response.status}): ${errText.slice(0, 150)}`);
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: `${systemPrompt}\n\nUser Request:\n${userPrompt}` }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.warn(`Gemini model ${model} HTTP ${response.status}:`, errText.slice(0, 150));
+          lastErr = new Error(`Gemini ${model} (HTTP ${response.status}): ${errText.slice(0, 150)}`);
+          continue;
+        }
+
+        const data = await response.json();
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+          return data.candidates[0].content.parts[0].text.trim();
+        }
+      } catch (err) {
+        console.warn(`Gemini model ${model} exception:`, err.message);
+        lastErr = err;
+      }
     }
 
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text.trim();
+    throw lastErr || new Error('Google Gemini API service unavailable.');
   }
 
   /**
