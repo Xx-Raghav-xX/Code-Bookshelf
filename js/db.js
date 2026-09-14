@@ -21,11 +21,20 @@ class CloudDatabaseEngine {
   loadStoredConfig() {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY_FIREBASE);
-      return stored ? JSON.parse(stored) : null;
+      if (stored) return JSON.parse(stored);
     } catch (err) {
       console.warn('Failed to parse Firebase stored config:', err);
-      return null;
     }
+
+    return {
+      apiKey: "AIzaSyBq8_4hTKlXims5qD9SxbE8tMnf1spA2Uc",
+      authDomain: "code-bookshelf-b3490.firebaseapp.com",
+      projectId: "code-bookshelf-b3490",
+      storageBucket: "code-bookshelf-b3490.firebasestorage.app",
+      messagingSenderId: "475816016773",
+      appId: "1:475816016773:web:ba13abf84b912e1b9162ec",
+      measurementId: "G-FHF7TVQ8NG"
+    };
   }
 
   /**
