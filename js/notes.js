@@ -1,12 +1,185 @@
-/**
- * Google Keep Clone - Notes Management, Editing, Color Picking, Drag-Drop & Checklists
- */
+const PRESET_CODE_TEMPLATES = [
+  {
+    id: 'preset_cpp_cp',
+    name: 'Competitive Programming C++ Template',
+    language: 'cpp',
+    icon: '⚡',
+    code: `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+void solve() {
+    int n;
+    if (!(cin >> n)) return;
+    cout << "Processing testcase with N = " << n << endl;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int t = 1;
+    cin >> t;
+    while(t--) {
+        solve();
+    }
+    return 0;
+}`
+  },
+  {
+    id: 'preset_express_api',
+    name: 'Express.js REST API Starter',
+    language: 'javascript',
+    icon: '🌐',
+    code: `const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.post('/api/data', (req, res) => {
+    const { name, payload } = req.body;
+    res.status(201).json({ message: 'Created', data: { name, payload } });
+});
+
+app.listen(PORT, () => {
+    console.log(\`Server running on port \${PORT}\`);
+});`
+  },
+  {
+    id: 'preset_python_fastio',
+    name: 'Python Fast I/O & Main Starter',
+    language: 'python',
+    icon: '🐍',
+    code: `import sys
+
+def main():
+    input_data = sys.stdin.read().split()
+    if not input_data:
+        print("No input provided.")
+        return
+    print(f"Read {len(input_data)} tokens from stdin.")
+    print("Tokens:", input_data)
+
+if __name__ == '__main__':
+    main()`
+  },
+  {
+    id: 'preset_java_starter',
+    name: 'Java Scanner & Class Template',
+    language: 'java',
+    icon: '☕',
+    code: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter your name:");
+        if (sc.hasNext()) {
+            String name = sc.next();
+            System.out.println("Hello, " + name + "! Welcome to Code Bookshelf.");
+        } else {
+            System.out.println("Hello, World!");
+        }
+        sc.close();
+    }
+}`
+  },
+  {
+    id: 'preset_sql_schema',
+    name: 'SQL Schema & CRUD Template',
+    language: 'sql',
+    icon: '🗃️',
+    code: `CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO users (username, email) VALUES
+    ('raghav_c', 'raghav@example.com'),
+    ('antigravity_dev', 'ai@example.com');
+
+SELECT * FROM users ORDER BY created_at DESC;`
+  },
+  {
+    id: 'preset_go_http',
+    name: 'Go HTTP Web Server Template',
+    language: 'go',
+    icon: '⚡',
+    code: `package main
+
+import (
+    "fmt"
+    "net/http"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "Hello World from Go Server! Path: %s\n", r.URL.Path)
+}
+
+func main() {
+    http.HandleFunc("/", handler)
+    fmt.Println("Server running on http://localhost:8080")
+    http.ListenAndServe(":8080", nil)
+}`
+  },
+  {
+    id: 'preset_rust_starter',
+    name: 'Rust Fast I/O Starter',
+    language: 'rust',
+    icon: '🦀',
+    code: `use std::io::{self, BufRead};
+
+fn main() {
+    let stdin = io::stdin();
+    println!("Enter text:");
+    for line in stdin.lock().lines() {
+        match line {
+            Ok(content) => println!("Echo: {}", content),
+            Err(err) => eprintln!("Error: {}", err),
+        }
+    }
+}`
+  },
+  {
+    id: 'preset_html_live',
+    name: 'HTML5 Live Preview Component',
+    language: 'html',
+    icon: '🎨',
+    code: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; text-align: center; }
+    .card { background: #1e293b; padding: 24px; border-radius: 12px; max-width: 400px; margin: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    button { background: #3b82f6; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    button:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🚀 Live HTML Component</h2>
+    <p>Interactive web widget preview.</p>
+    <button onclick="alert('Hello from Code Bookshelf!')">Click Me!</button>
+  </div>
+</body>
+</html>`
+  }
+];
 
 class NotesManager {
   constructor() {
     this.notes = this.loadFromStorage();
     this.labels = this.loadLabelsFromStorage();
     this.collections = this.loadCollectionsFromStorage();
+    this.presetTemplates = PRESET_CODE_TEMPLATES;
+    this.customTemplates = this.loadTemplatesFromStorage();
     
     // Layout & Filter State
     this.isListView = localStorage.getItem('keep-list-view') === 'true';
@@ -153,6 +326,29 @@ class NotesManager {
     }
   }
 
+  getTemplatesStorageKey() {
+    const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+    return userId ? `keep-templates-${userId}` : 'keep-templates';
+  }
+
+  loadTemplatesFromStorage() {
+    try {
+      const data = localStorage.getItem(this.getTemplatesStorageKey());
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Failed to load custom templates:', e);
+      return [];
+    }
+  }
+
+  saveTemplatesToStorage() {
+    try {
+      localStorage.setItem(this.getTemplatesStorageKey(), JSON.stringify(this.customTemplates));
+    } catch (e) {
+      console.error('Failed to save custom templates:', e);
+    }
+  }
+
   init() {
     this.initToast();
     this.initViewToggle();
@@ -170,6 +366,7 @@ class NotesManager {
     this.initEditNoteModal();
     this.initCommandPalette();
     this.initCollections();
+    this.initTemplates();
     this.renderSidebarCollections();
 
     // Listen for auth changes to dynamically switch notebook storage
@@ -1512,6 +1709,227 @@ class NotesManager {
         this.renderSidebarCollections();
       });
     });
+  }
+
+  initTemplates() {
+    this.presetTemplates = PRESET_CODE_TEMPLATES;
+    this.customTemplates = this.loadTemplatesFromStorage();
+
+    const creatorBtn = document.getElementById('creator-template-btn');
+    const creatorMenu = document.getElementById('creator-template-menu');
+    const editBtn = document.getElementById('edit-template-btn');
+    const editMenu = document.getElementById('edit-template-menu');
+
+    if (creatorBtn && creatorMenu) {
+      creatorBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (editMenu) editMenu.classList.remove('show');
+        this.renderTemplateMenu(creatorMenu, 'creator');
+        creatorMenu.classList.toggle('show');
+      });
+    }
+
+    if (editBtn && editMenu) {
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (creatorMenu) creatorMenu.classList.remove('show');
+        this.renderTemplateMenu(editMenu, 'edit');
+        editMenu.classList.toggle('show');
+      });
+    }
+
+    document.addEventListener('click', () => {
+      if (creatorMenu) creatorMenu.classList.remove('show');
+      if (editMenu) editMenu.classList.remove('show');
+    });
+  }
+
+  renderTemplateMenu(menuElem, targetContext) {
+    if (!menuElem) return;
+
+    const presets = this.presetTemplates;
+    const custom = this.customTemplates;
+
+    let html = `
+      <div style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; padding: 4px 6px; letter-spacing: 0.5px;">
+        🚀 PRESET BOILERPLATES
+      </div>
+    `;
+
+    presets.forEach(tmpl => {
+      html += `
+        <div class="popover-item template-item" data-tmpl-id="${tmpl.id}" data-target="${targetContext}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; font-size: 12px; cursor: pointer; border-radius: 4px;">
+          <span style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span>${tmpl.icon || '⚡'}</span>
+            <strong style="color: var(--text-primary); font-weight: 500;">${this.escapeHtml(tmpl.name)}</strong>
+          </span>
+          <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; background: var(--hover-bg); padding: 1px 6px; border-radius: 8px; color: var(--accent-color, #1a73e8);">${tmpl.language}</span>
+        </div>
+      `;
+    });
+
+    html += `
+      <div style="height: 1px; background: var(--border-color); margin: 6px 0;"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; padding: 4px 6px; letter-spacing: 0.5px;">
+        <span>⭐ MY CUSTOM TEMPLATES</span>
+      </div>
+    `;
+
+    if (custom.length === 0) {
+      html += `<div style="font-size: 11px; color: var(--text-secondary); padding: 4px 6px; font-style: italic;">No custom boilerplates saved yet.</div>`;
+    } else {
+      custom.forEach(tmpl => {
+        html += `
+          <div class="popover-item template-item" data-tmpl-id="${tmpl.id}" data-target="${targetContext}" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; font-size: 12px; cursor: pointer; border-radius: 4px;">
+            <span style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span>⭐</span>
+              <strong style="color: var(--text-primary); font-weight: 500;">${this.escapeHtml(tmpl.name)}</strong>
+            </span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; background: var(--hover-bg); padding: 1px 6px; border-radius: 8px; color: var(--accent-color, #1a73e8);">${tmpl.language}</span>
+              <button class="chip-remove-btn" data-delete-tmpl="${tmpl.id}" style="font-size: 11px; padding: 2px;">✕</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+      <div style="height: 1px; background: var(--border-color); margin: 6px 0;"></div>
+      <div class="popover-item" data-save-current-tmpl="${targetContext}" style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #1a73e8; cursor: pointer; border-radius: 4px; background: var(--hover-bg);">
+        ➕ Save Current Code as Template
+      </div>
+    `;
+
+    menuElem.innerHTML = html;
+
+    // Attach click handlers
+    menuElem.querySelectorAll('[data-tmpl-id]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('[data-delete-tmpl]')) return;
+        const tmplId = item.getAttribute('data-tmpl-id');
+        const target = item.getAttribute('data-target');
+        this.applyTemplate(tmplId, target);
+        menuElem.classList.remove('show');
+      });
+    });
+
+    menuElem.querySelectorAll('[data-delete-tmpl]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tmplId = btn.getAttribute('data-delete-tmpl');
+        this.deleteCustomTemplate(tmplId);
+        this.renderTemplateMenu(menuElem, targetContext);
+      });
+    });
+
+    const saveBtn = menuElem.querySelector('[data-save-current-tmpl]');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.saveCurrentCodeAsTemplate(targetContext);
+        menuElem.classList.remove('show');
+      });
+    }
+  }
+
+  applyTemplate(tmplId, targetContext) {
+    const allTemplates = [...this.presetTemplates, ...this.customTemplates];
+    const tmpl = allTemplates.find(t => t.id === tmplId);
+    if (!tmpl) return;
+
+    if (targetContext === 'creator') {
+      const langSelect = document.getElementById('creator-language-select');
+      const codeInput = document.getElementById('creator-code-input');
+      const titleInput = document.getElementById('note-title-input');
+
+      if (langSelect) langSelect.value = tmpl.language;
+      if (codeInput) codeInput.value = tmpl.code;
+      if (titleInput && !titleInput.value) titleInput.value = tmpl.name;
+
+      this.isCodeMode = true;
+      this.codeLanguage = tmpl.language;
+
+      const codeContainer = document.getElementById('code-container');
+      const bodyInput = document.getElementById('note-body-input');
+      if (codeContainer) codeContainer.style.display = 'block';
+      if (bodyInput) bodyInput.style.display = 'none';
+
+      this.showToast(`Inserted template "${tmpl.name}"!`);
+    } else if (targetContext === 'edit') {
+      const langSelect = document.getElementById('edit-language-select');
+      const titleInput = document.getElementById('edit-note-title');
+
+      if (langSelect) langSelect.value = tmpl.language;
+      if (titleInput && !titleInput.value) titleInput.value = tmpl.name;
+
+      if (this.editCodeMirror) {
+        this.editCodeMirror.setValue(tmpl.code);
+        this.editCodeMirror.setOption('mode', this.getCodeMirrorMode(tmpl.language));
+      } else {
+        const editCodeInput = document.getElementById('edit-code-input');
+        if (editCodeInput) editCodeInput.value = tmpl.code;
+      }
+
+      this.showToast(`Inserted template "${tmpl.name}"!`);
+    }
+  }
+
+  saveCurrentCodeAsTemplate(targetContext) {
+    let code = '';
+    let lang = 'javascript';
+    let defaultName = '';
+
+    if (targetContext === 'creator') {
+      const codeInput = document.getElementById('creator-code-input');
+      const langSelect = document.getElementById('creator-language-select');
+      const titleInput = document.getElementById('note-title-input');
+      code = codeInput ? codeInput.value : '';
+      lang = langSelect ? langSelect.value : 'javascript';
+      defaultName = titleInput ? titleInput.value : '';
+    } else if (targetContext === 'edit') {
+      const langSelect = document.getElementById('edit-language-select');
+      const titleInput = document.getElementById('edit-note-title');
+      lang = langSelect ? langSelect.value : 'javascript';
+      defaultName = titleInput ? titleInput.value : '';
+
+      if (this.editCodeMirror) {
+        code = this.editCodeMirror.getValue();
+      } else {
+        const editCodeInput = document.getElementById('edit-code-input');
+        code = editCodeInput ? editCodeInput.value : '';
+      }
+    }
+
+    if (!code || !code.trim()) {
+      this.showToast('Code is empty! Write code before saving as a template.');
+      return;
+    }
+
+    const name = prompt('Enter a name for your custom boilerplate template:', defaultName || `${lang.toUpperCase()} Boilerplate`);
+    if (!name || !name.trim()) return;
+
+    const newTmpl = {
+      id: 'custom_tmpl_' + Date.now(),
+      name: name.trim(),
+      language: lang,
+      icon: '⭐',
+      code: code,
+      createdAt: new Date().toISOString()
+    };
+
+    this.customTemplates.push(newTmpl);
+    this.saveTemplatesToStorage();
+    this.showToast(`Saved custom template "${newTmpl.name}"!`);
+  }
+
+  deleteCustomTemplate(tmplId) {
+    const tmpl = this.customTemplates.find(t => t.id === tmplId);
+    if (!tmpl) return;
+
+    this.customTemplates = this.customTemplates.filter(t => t.id !== tmplId);
+    this.saveTemplatesToStorage();
+    this.showToast(`Deleted template "${tmpl.name}"`);
   }
 
   deleteCollection(collectionId) {
@@ -3452,6 +3870,24 @@ class NotesManager {
       icon: '<path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L21 12l-3.37-6.16z"/>'
     }));
 
+    const collectionActions = (this.collections || []).map(c => ({
+      id: `nav_col_${c.id}`,
+      type: 'collection',
+      colId: c.id,
+      title: `Collection: ${c.name}`,
+      hint: 'Playlist',
+      icon: '<path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>'
+    }));
+
+    const templateActions = [...(this.presetTemplates || []), ...(this.customTemplates || [])].map(t => ({
+      id: `tmpl_${t.id}`,
+      type: 'template',
+      tmplId: t.id,
+      title: `Insert Boilerplate: ${t.name}`,
+      hint: `Boilerplate (${t.language.toUpperCase()})`,
+      icon: '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>'
+    }));
+
     const noteItems = this.notes
       .filter(n => !n.isBinned)
       .map(n => ({
@@ -3463,7 +3899,7 @@ class NotesManager {
         icon: n.isCode ? '<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>' : '<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>'
       }));
 
-    let allItems = [...defaultActions, ...labelActions, ...noteItems];
+    let allItems = [...defaultActions, ...labelActions, ...collectionActions, ...templateActions, ...noteItems];
 
     if (q) {
       allItems = allItems.filter(item => item.title.toLowerCase().includes(q));
@@ -3528,6 +3964,13 @@ class NotesManager {
       }
     } else if (item.type === 'label') {
       this.setView(`label_${item.labelName}`);
+    } else if (item.type === 'collection') {
+      this.setView(`collection_${item.colId}`);
+    } else if (item.type === 'template') {
+      const creator = document.getElementById('note-creator');
+      if (creator) creator.classList.add('expanded');
+      this.enableCodeMode(true);
+      this.applyTemplate(item.tmplId, 'creator');
     } else if (item.type === 'note') {
       const targetNote = this.notes.find(n => n.id === item.noteId);
       if (targetNote) {

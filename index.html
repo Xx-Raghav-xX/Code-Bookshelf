@@ -353,18 +353,28 @@
 
                 <!-- Code Snippet Mode Container -->
                 <div class="code-container" id="code-container" style="display: none;">
-                  <div class="code-header-row">
-                    <select class="language-select-dropdown" id="creator-language-select">
-                      <option value="javascript">JavaScript (JS)</option>
-                      <option value="python">Python 3 (PY)</option>
-                      <option value="java">Java (JAVA)</option>
-                      <option value="cpp">C++ (C++)</option>
-                      <option value="c">C (GCC)</option>
-                      <option value="sql">SQL (SQLite)</option>
-                      <option value="rust">Rust (RS)</option>
-                      <option value="go">Go (GO)</option>
-                      <option value="html">HTML/CSS (Preview)</option>
-                    </select>
+                  <div class="code-header-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <select class="language-select-dropdown" id="creator-language-select">
+                        <option value="javascript">JavaScript (JS)</option>
+                        <option value="python">Python 3 (PY)</option>
+                        <option value="java">Java (JAVA)</option>
+                        <option value="cpp">C++ (C++)</option>
+                        <option value="c">C (GCC)</option>
+                        <option value="sql">SQL (SQLite)</option>
+                        <option value="rust">Rust (RS)</option>
+                        <option value="go">Go (GO)</option>
+                        <option value="html">HTML/CSS (Preview)</option>
+                      </select>
+
+                      <div style="position: relative; display: inline-block;">
+                        <button class="code-action-icon-btn" id="creator-template-btn" title="Insert starter code template" style="padding: 4px 10px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                          🚀 Boilerplates ▾
+                        </button>
+                        <div class="popover-menu" id="creator-template-menu" style="width: 280px; max-height: 280px; overflow-y: auto; padding: 6px;"></div>
+                      </div>
+                    </div>
+
                     <span class="code-mode-indicator">
                       <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align: middle; margin-right: 4px;"><path fill="currentColor" d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
                       Executable Code
@@ -578,18 +588,27 @@
           <div id="ai-drawer-content" style="font-size: 12px; color: var(--text-primary); max-height: 200px; overflow-y: auto; white-space: pre-wrap; font-family: sans-serif; line-height: 1.5;"></div>
         </div>
 
-        <div class="code-header-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <select class="language-select-dropdown" id="edit-language-select">
-            <option value="javascript">JavaScript (JS)</option>
-            <option value="python">Python 3 (PY)</option>
-            <option value="java">Java (JAVA)</option>
-            <option value="cpp">C++ (C++)</option>
-            <option value="c">C (GCC)</option>
-            <option value="sql">SQL (SQLite)</option>
-            <option value="rust">Rust (RS)</option>
-            <option value="go">Go (GO)</option>
-            <option value="html">HTML/CSS (Preview)</option>
-          </select>
+        <div class="code-header-row" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select class="language-select-dropdown" id="edit-language-select">
+              <option value="javascript">JavaScript (JS)</option>
+              <option value="python">Python 3 (PY)</option>
+              <option value="java">Java (JAVA)</option>
+              <option value="cpp">C++ (C++)</option>
+              <option value="c">C (GCC)</option>
+              <option value="sql">SQL (SQLite)</option>
+              <option value="rust">Rust (RS)</option>
+              <option value="go">Go (GO)</option>
+              <option value="html">HTML/CSS (Preview)</option>
+            </select>
+
+            <div style="position: relative; display: inline-block;">
+              <button class="code-action-icon-btn" id="edit-template-btn" title="Insert starter code template" style="padding: 4px 10px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">
+                🚀 Boilerplates ▾
+              </button>
+              <div class="popover-menu" id="edit-template-menu" style="width: 280px; max-height: 280px; overflow-y: auto; padding: 6px;"></div>
+            </div>
+          </div>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button class="code-action-icon-btn" id="edit-modal-history-btn" title="Version History">
               <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7 7.07 7.07 0 0 1-6-3.4L5.54 17A8.93 8.93 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8z"/></svg>
