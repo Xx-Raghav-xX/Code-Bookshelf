@@ -1552,11 +1552,13 @@ class NotesManager {
     const titleInput = document.getElementById('note-title-input');
     const bodyInput = document.getElementById('note-body-input');
     const codeInput = document.getElementById('creator-code-input');
+    const stdinInput = document.getElementById('creator-stdin-input');
     const languageSelect = document.getElementById('creator-language-select');
 
     const title = titleInput ? titleInput.value.trim() : '';
     const body = bodyInput ? bodyInput.value.trim() : '';
     const code = codeInput ? codeInput.value.trim() : '';
+    const stdin = stdinInput ? stdinInput.value : '';
     const language = languageSelect ? languageSelect.value : 'javascript';
 
     const hasChecklist = this.isChecklistMode && this.checklistItems.length > 0;
@@ -1573,6 +1575,7 @@ class NotesManager {
       isCode: this.isCodeMode,
       codeLanguage: language,
       code: code,
+      stdin: stdin,
       lastOutput: null,
       lastOutputIsError: false,
       lastOutputIsHtml: false,
@@ -1598,6 +1601,7 @@ class NotesManager {
     const titleInput = document.getElementById('note-title-input');
     const bodyInput = document.getElementById('note-body-input');
     const codeInput = document.getElementById('creator-code-input');
+    const stdinInput = document.getElementById('creator-stdin-input');
     const languageSelect = document.getElementById('creator-language-select');
     const creatorPinBtn = document.getElementById('creator-pin-btn');
     
@@ -1608,6 +1612,7 @@ class NotesManager {
     if (titleInput) titleInput.value = '';
     if (bodyInput) bodyInput.value = '';
     if (codeInput) codeInput.value = '';
+    if (stdinInput) stdinInput.value = '';
     if (languageSelect) languageSelect.value = 'javascript';
     
     this.selectedColor = 'default';

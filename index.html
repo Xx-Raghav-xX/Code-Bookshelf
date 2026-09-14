@@ -338,6 +338,15 @@
                   </div>
                   <textarea class="code-creator-editor" id="creator-code-input" placeholder="// Write code here..."
                     spellcheck="false"></textarea>
+
+                  <!-- STDIN Drawer -->
+                  <div class="code-stdin-wrapper" style="margin-top: 8px;">
+                    <div class="stdin-header-row" style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">
+                      <span>📥 Standard Input (stdin)</span>
+                      <span style="font-size: 10px; opacity: 0.8;">Used by Python input(), C++ cin, C scanf()</span>
+                    </div>
+                    <textarea class="code-stdin-input" id="creator-stdin-input" placeholder="Enter input values for your script (e.g. 42 or Hello World)..." spellcheck="false" rows="2" style="width: 100%; font-family: monospace; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-search); color: var(--search-text); resize: vertical;"></textarea>
+                  </div>
                 </div>
 
                 <!-- Attached Preview Row (Chips & Drawing) -->
@@ -525,7 +534,15 @@
           </div>
         </div>
         <textarea class="code-creator-editor" id="edit-code-input" placeholder="// Write code here..." spellcheck="false" style="min-height: 180px;"></textarea>
-        <input type="text" class="code-stdin-input" id="edit-stdin-input" placeholder="Standard input (stdin)..." style="width: 100%;">
+        
+        <!-- STDIN Drawer -->
+        <div class="code-stdin-wrapper" style="margin-top: 8px;">
+          <div class="stdin-header-row" style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">
+            <span>📥 Standard Input (stdin)</span>
+            <span style="font-size: 10px; opacity: 0.8;">Used by Python input(), C++ cin, C scanf()</span>
+          </div>
+          <textarea class="code-stdin-input" id="edit-stdin-input" placeholder="Enter input values for your script (e.g. 42 or Hello World)..." spellcheck="false" rows="2" style="width: 100%; font-family: monospace; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-search); color: var(--search-text); resize: vertical;"></textarea>
+        </div>
         <div id="edit-modal-output-container"></div>
       </div>
 
