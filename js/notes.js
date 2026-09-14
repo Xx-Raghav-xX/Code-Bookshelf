@@ -1598,6 +1598,30 @@ class NotesManager {
     modal.classList.add('active');
   }
 
+  computeDiff(oldText, newText) {
+    if (typeof Diff !== 'undefined' && Diff.diffLines) {
+      return Diff.diffLines(oldText, newText);
+    }
+    const oldLines = oldText.split('\n');
+    const newLines = newText.split('\n');
+    const diff = [];
+    let i = 0, j = 0;
+    while (i < oldLines.length || j < newLines.length) {
+      if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
+        diff.push({ value: oldLines[i] + '\n', count: 1 });
+        i++;
+        j++;
+      } else if (j < newLines.length && (!oldLines.slice(i).includes(newLines[j]))) {
+        diff.push({ value: newLines[j] + '\n', added: true, count: 1 });
+        j++;
+      } else if (i < oldLines.length) {
+        diff.push({ value: oldLines[i] + '\n', removed: true, count: 1 });
+        i++;
+      }
+    }
+    return diff;
+  }
+
   renderVersionHistory(note) {
     const container = document.getElementById('history-items-list');
     if (!container) return;
@@ -1612,12 +1636,21 @@ class NotesManager {
     }
 
     container.innerHTML = note.revisions.map((rev, idx) => `
-      <div class="history-item-card" style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--bg-primary);">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="history-item-card" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--bg-primary);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
           <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">📅 ${this.escapeHtml(rev.formattedDate || rev.timestamp)}</span>
-          <button class="restore-version-btn" data-rev-index="${idx}" style="background: var(--primary-yellow); color: #202124; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">Restore Version</button>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button class="compare-diff-btn" data-rev-index="${idx}" style="background: var(--bg-search); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; cursor: pointer;">
+              🔍 Compare Diff
+            </button>
+            <button class="restore-version-btn" data-rev-index="${idx}" style="background: var(--primary-yellow); color: #202124; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
+              Restore Version
+            </button>
+          </div>
         </div>
-        <pre style="font-family: monospace; font-size: 11px; color: var(--text-primary); background: var(--bg-search); padding: 6px; border-radius: 4px; max-height: 70px; overflow-y: auto; white-space: pre-wrap; margin: 0;">${this.escapeHtml(rev.code)}</pre>
+        <pre style="font-family: monospace; font-size: 11px; color: var(--text-primary); background: var(--bg-search); padding: 6px; border-radius: 4px; max-height: 60px; overflow-y: auto; white-space: pre-wrap; margin: 0;">${this.escapeHtml(rev.code)}</pre>
+        
+        <div class="version-diff-container" id="version-diff-${idx}" style="display: none; margin-top: 4px;"></div>
       </div>
     `).join('');
 
@@ -1635,6 +1668,115 @@ class NotesManager {
           }
           this.showToast(`Restored snippet version from ${rev.formattedDate || 'history'}`);
         }
+      });
+    });
+
+    container.querySelectorAll('.compare-diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-rev-index'), 10);
+        const rev = note.revisions[idx];
+        const diffBox = document.getElementById(`version-diff-${idx}`);
+        if (!rev || !diffBox) return;
+
+        if (diffBox.style.display !== 'none') {
+          diffBox.style.display = 'none';
+          btn.textContent = '🔍 Compare Diff';
+          return;
+        }
+
+        const editCodeInput = document.getElementById('edit-code-input');
+        const currentCode = editCodeInput ? editCodeInput.value : (note.code || '');
+
+        btn.textContent = '✕ Close Diff';
+        this.renderDiffView(diffBox, rev.code, currentCode, rev.formattedDate || 'Past Revision', 'inline');
+      });
+    });
+  }
+
+  renderDiffView(container, oldCode, newCode, revLabel, mode = 'inline') {
+    const diff = this.computeDiff(oldCode, newCode);
+    container.style.display = 'block';
+
+    let diffContentHtml = '';
+
+    if (mode === 'split') {
+      const oldLinesHtml = [];
+      const newLinesHtml = [];
+
+      diff.forEach(part => {
+        const lines = part.value.split('\n');
+        if (lines[lines.length - 1] === '') lines.pop();
+
+        if (part.added) {
+          lines.forEach(l => {
+            newLinesHtml.push(`<div style="background: rgba(46, 160, 67, 0.25); color: #7ee787; padding: 1px 4px;">+ ${this.escapeHtml(l)}</div>`);
+          });
+        } else if (part.removed) {
+          lines.forEach(l => {
+            oldLinesHtml.push(`<div style="background: rgba(248, 81, 73, 0.25); color: #ff7b72; padding: 1px 4px;">- ${this.escapeHtml(l)}</div>`);
+          });
+        } else {
+          lines.forEach(l => {
+            oldLinesHtml.push(`<div style="color: var(--text-secondary); opacity: 0.8; padding: 1px 4px;">  ${this.escapeHtml(l)}</div>`);
+            newLinesHtml.push(`<div style="color: var(--text-secondary); opacity: 0.8; padding: 1px 4px;">  ${this.escapeHtml(l)}</div>`);
+          });
+        }
+      });
+
+      diffContentHtml = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: monospace; font-size: 11px;">
+          <div style="border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+            <div style="font-size: 10px; font-weight: 600; color: #ff7b72; padding: 4px 6px; background: rgba(248, 81, 73, 0.1); border-bottom: 1px solid var(--border-color);">- ${this.escapeHtml(revLabel)}</div>
+            <pre style="margin: 0; padding: 4px; background: var(--bg-search); white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${oldLinesHtml.join('')}</pre>
+          </div>
+          <div style="border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+            <div style="font-size: 10px; font-weight: 600; color: #7ee787; padding: 4px 6px; background: rgba(46, 160, 67, 0.1); border-bottom: 1px solid var(--border-color);">+ Current Editor</div>
+            <pre style="margin: 0; padding: 4px; background: var(--bg-search); white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${newLinesHtml.join('')}</pre>
+          </div>
+        </div>
+      `;
+    } else {
+      const inlineRows = [];
+      diff.forEach(part => {
+        const lines = part.value.split('\n');
+        if (lines[lines.length - 1] === '') lines.pop();
+
+        if (part.added) {
+          lines.forEach(l => {
+            inlineRows.push(`<div style="background: rgba(46, 160, 67, 0.25); color: #7ee787; padding: 1px 6px;">+ ${this.escapeHtml(l)}</div>`);
+          });
+        } else if (part.removed) {
+          lines.forEach(l => {
+            inlineRows.push(`<div style="background: rgba(248, 81, 73, 0.25); color: #ff7b72; padding: 1px 6px;">- ${this.escapeHtml(l)}</div>`);
+          });
+        } else {
+          lines.forEach(l => {
+            inlineRows.push(`<div style="color: var(--text-secondary); opacity: 0.8; padding: 1px 6px;">  ${this.escapeHtml(l)}</div>`);
+          });
+        }
+      });
+
+      diffContentHtml = `
+        <pre style="font-family: monospace; font-size: 11px; margin: 0; padding: 6px; border-radius: 4px; background: var(--bg-search); white-space: pre-wrap; max-height: 160px; overflow-y: auto; border: 1px solid var(--border-color);">${inlineRows.join('')}</pre>
+      `;
+    }
+
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin-bottom: 6px; font-weight: 600; color: var(--text-primary);">
+        <span>Diff: <span style="color: #ff7b72;">- ${this.escapeHtml(revLabel)}</span> vs <span style="color: #7ee787;">+ Current Editor</span></span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="diff-toggle-mode-btn" data-mode="inline" style="font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-color); background: ${mode === 'inline' ? 'var(--primary-yellow)' : 'var(--bg-primary)'}; color: ${mode === 'inline' ? '#202124' : 'var(--text-primary)'}; cursor: pointer; font-weight: ${mode === 'inline' ? '600' : 'normal'};">Inline</button>
+          <button class="diff-toggle-mode-btn" data-mode="split" style="font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border-color); background: ${mode === 'split' ? 'var(--primary-yellow)' : 'var(--bg-primary)'}; color: ${mode === 'split' ? '#202124' : 'var(--text-primary)'}; cursor: pointer; font-weight: ${mode === 'split' ? '600' : 'normal'};">Side-by-Side</button>
+        </div>
+      </div>
+      ${diffContentHtml}
+    `;
+
+    container.querySelectorAll('.diff-toggle-mode-btn').forEach(mBtn => {
+      mBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newMode = mBtn.getAttribute('data-mode');
+        this.renderDiffView(container, oldCode, newCode, revLabel, newMode);
       });
     });
   }
