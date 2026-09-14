@@ -222,6 +222,42 @@ class NotesManager {
     this.paletteFilteredItems = [];
   }
 
+  getIconSvg(iconStr, size = 16) {
+    if (!iconStr) iconStr = '📚';
+    if (typeof iconStr === 'string' && iconStr.trim().startsWith('<svg')) {
+      return iconStr;
+    }
+
+    const s = size;
+    const icons = {
+      '⚡': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+      '🌐': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+      '🐍': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 2H2v10h10V2z"/><path d="M12 12h10v10H12V12z"/><path d="M6 6h.01"/><path d="M18 18h.01"/></svg>`,
+      '☕': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
+      '🗃️': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+      '🦀': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M9 2v2M15 20v2M9 20v2M2 15h2M2 9h2M20 15h2M20 9h2"/></svg>`,
+      '🎨': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
+      '⚛️': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(150 12 12)"/></svg>`,
+      '🏗️': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+      '📚': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+      '⭐': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      '📊': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+      '🔥': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>`,
+      '💡': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`,
+      '✨': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/></svg>`,
+      '🐛': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="8" height="14" x="8" y="6" rx="4"/><path d="m19 7-3 2"/><path d="m5 7 3 2"/><path d="m19 19-3-2"/><path d="m5 19 3-2"/><path d="M20 13h-4"/><path d="M4 13h4"/><path d="m10 4 1-2"/><path d="m14 4-1-2"/></svg>`,
+      '📅': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+      '🔍': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+      '🚀': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.71.19-1.81-.57-2.57l-1.86-1.86c-.76-.76-1.86-1.28-2.57-.57z"/><path d="M15 9l-6 6"/><path d="M9 3c0 0 6 0 11 5s5 11 5 11-6 0-11-5S9 3 9 3z"/></svg>`,
+      '📋': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
+      '📄': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+      '📕': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+      '➕': `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+    };
+
+    return icons[iconStr] || icons['📚'];
+  }
+
   getNotesStorageKey() {
     const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
     return userId ? `keep-notes-${userId}` : 'keep-notes';
@@ -477,7 +513,7 @@ class NotesManager {
     return `
       <div class="analytics-dashboard-container">
         <div class="analytics-header">
-          <h2>📊 Developer Analytics & Activity Dashboard</h2>
+          <h2 style="display: flex; align-items: center; gap: 8px;">${this.getIconSvg('📊', 22)} Developer Analytics & Activity Dashboard</h2>
           <p>Real-time telemetry on code volume, language distribution, and daily programming streak</p>
         </div>
 
@@ -494,18 +530,18 @@ class NotesManager {
           </div>
           <div class="stat-card">
             <div class="stat-card-title">Coding Activity Streak</div>
-            <div class="stat-card-value">🔥 ${activeStreak} <span style="font-size: 16px; font-weight: normal;">Days</span></div>
+            <div class="stat-card-value" style="display: flex; align-items: center; gap: 6px;"><span style="color: #f59e0b;">${this.getIconSvg('🔥', 20)}</span> ${activeStreak} <span style="font-size: 16px; font-weight: normal;">Days</span></div>
             <div class="stat-card-sub text-muted">Current consecutive streak</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-title">Total Activity Actions</div>
-            <div class="stat-card-value">⚡ ${totalActivities}</div>
+            <div class="stat-card-value" style="display: flex; align-items: center; gap: 6px;"><span style="color: #eab308;">${this.getIconSvg('⚡', 20)}</span> ${totalActivities}</div>
             <div class="stat-card-sub text-muted">Snippet additions & executions</div>
           </div>
         </div>
 
         <div class="analytics-section-card">
-          <h3 class="analytics-section-title">🎨 Language Distribution</h3>
+          <h3 class="analytics-section-title" style="display: flex; align-items: center; gap: 6px;">${this.getIconSvg('🎨', 18)} Language Distribution</h3>
           <div class="language-stacked-bar">
             ${barSegmentsHtml}
           </div>
@@ -516,7 +552,7 @@ class NotesManager {
 
         <div class="analytics-section-card">
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-            <h3 class="analytics-section-title" style="margin: 0;">🟩 365-Day Activity Heatmap</h3>
+            <h3 class="analytics-section-title" style="margin: 0; display: flex; align-items: center; gap: 6px;"><span style="color: #22c55e;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></span> 365-Day Activity Heatmap</h3>
             <div style="font-size: 12px; color: var(--text-secondary);">
               Total: <strong>${totalActivities} actions</strong> past year
             </div>
@@ -1714,7 +1750,7 @@ class NotesManager {
       const noteCount = (col.noteIds || []).filter(id => this.notes.some(n => n.id === id && !n.isArchived && !n.isBinned)).length;
       return `
         <a href="#col-${col.id}" class="nav-item ${this.currentView === 'collection_' + col.id ? 'active' : ''}" data-nav="collection_${col.id}">
-          <span class="nav-item-icon" style="font-size: 18px;">${col.icon || '📚'}</span>
+          <span class="nav-item-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 20px;">${this.getIconSvg(col.icon, 18)}</span>
           <span class="nav-item-label">${this.escapeHtml(col.name)}</span>
           <span class="collection-count-badge">${noteCount}</span>
         </a>
@@ -1973,8 +2009,8 @@ class NotesManager {
     const custom = this.customTemplates;
 
     let html = `
-      <div style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; padding: 4px 6px; letter-spacing: 0.5px;">
-        🚀 PRESET BOILERPLATES
+      <div style="font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; padding: 4px 6px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+        ${this.getIconSvg('🚀', 14)} PRESET BOILERPLATES
       </div>
     `;
 
@@ -1982,7 +2018,7 @@ class NotesManager {
       html += `
         <div class="popover-item template-item" data-tmpl-id="${tmpl.id}" data-target="${targetContext}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; font-size: 12px; cursor: pointer; border-radius: 4px;">
           <span style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            <span>${tmpl.icon || '⚡'}</span>
+            <span style="display: inline-flex; align-items: center;">${this.getIconSvg(tmpl.icon, 14)}</span>
             <strong style="color: var(--text-primary); font-weight: 500;">${this.escapeHtml(tmpl.name)}</strong>
           </span>
           <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; background: var(--hover-bg); padding: 1px 6px; border-radius: 8px; color: var(--accent-color, #1a73e8);">${tmpl.language}</span>
@@ -1993,7 +2029,7 @@ class NotesManager {
     html += `
       <div style="height: 1px; background: var(--border-color); margin: 6px 0;"></div>
       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--text-secondary); text-transform: uppercase; padding: 4px 6px; letter-spacing: 0.5px;">
-        <span>⭐ MY CUSTOM TEMPLATES</span>
+        <span style="display: flex; align-items: center; gap: 6px;">${this.getIconSvg('⭐', 14)} MY CUSTOM TEMPLATES</span>
       </div>
     `;
 
@@ -2004,7 +2040,7 @@ class NotesManager {
         html += `
           <div class="popover-item template-item" data-tmpl-id="${tmpl.id}" data-target="${targetContext}" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; font-size: 12px; cursor: pointer; border-radius: 4px;">
             <span style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <span>⭐</span>
+              <span style="display: inline-flex; align-items: center;">${this.getIconSvg('⭐', 14)}</span>
               <strong style="color: var(--text-primary); font-weight: 500;">${this.escapeHtml(tmpl.name)}</strong>
             </span>
             <div style="display: flex; align-items: center; gap: 4px;">
@@ -2019,7 +2055,7 @@ class NotesManager {
     html += `
       <div style="height: 1px; background: var(--border-color); margin: 6px 0;"></div>
       <div class="popover-item" data-save-current-tmpl="${targetContext}" style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #1a73e8; cursor: pointer; border-radius: 4px; background: var(--hover-bg);">
-        ➕ Save Current Code as Template
+        ${this.getIconSvg('➕', 14)} Save Current Code as Template
       </div>
     `;
 
@@ -2494,13 +2530,13 @@ class NotesManager {
           return;
         }
 
-        openAiDrawer('💡 AI Line-by-Line Code Explanation', '<span class="compiling-spinner"></span> Analyzing snippet with AI...');
+        openAiDrawer('AI Line-by-Line Code Explanation', '<span class="compiling-spinner"></span> Analyzing snippet with AI...');
 
         try {
           const explanation = await window.aiAssistant.explainCode(code, lang);
-          openAiDrawer('💡 AI Line-by-Line Code Explanation', this.formatMarkdownAndMath(explanation));
+          openAiDrawer('AI Line-by-Line Code Explanation', this.formatMarkdownAndMath(explanation));
         } catch (err) {
-          openAiDrawer('💡 AI Explanation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+          openAiDrawer('AI Explanation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
         }
       });
     }
@@ -2517,14 +2553,14 @@ class NotesManager {
           return;
         }
 
-        openAiDrawer('⚡ AI Code Refactor & Optimization', '<span class="compiling-spinner"></span> Optimizing and refactoring snippet...');
+        openAiDrawer('AI Code Refactor & Optimization', '<span class="compiling-spinner"></span> Optimizing and refactoring snippet...');
 
         try {
           const result = await window.aiAssistant.optimizeCode(code, lang);
           const refactoredCode = window.aiAssistant.parseCodeBlock(result);
-          openAiDrawer('⚡ AI Code Refactor & Optimization', this.formatMarkdownAndMath(result), refactoredCode);
+          openAiDrawer('AI Code Refactor & Optimization', this.formatMarkdownAndMath(result), refactoredCode);
         } catch (err) {
-          openAiDrawer('⚡ AI Optimization Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+          openAiDrawer('AI Optimization Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
         }
       });
     }
@@ -2539,14 +2575,14 @@ class NotesManager {
         return;
       }
 
-      openAiDrawer('✨ AI Code Generator', '<span class="compiling-spinner"></span> Generating code snippet from prompt...');
+      openAiDrawer('AI Code Generator', '<span class="compiling-spinner"></span> Generating code snippet from prompt...');
 
       try {
         const result = await window.aiAssistant.generateSnippet(promptText, lang);
         const generatedCode = window.aiAssistant.parseCodeBlock(result);
-        openAiDrawer('✨ AI Code Generator', this.formatMarkdownAndMath(result), generatedCode);
+        openAiDrawer('AI Code Generator', this.formatMarkdownAndMath(result), generatedCode);
       } catch (err) {
-        openAiDrawer('✨ AI Generation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
+        openAiDrawer('AI Generation Failed', `<span style="color: var(--error-red);">AI request failed: ${this.escapeHtml(err.message)}</span>`);
       }
     };
 
@@ -2727,10 +2763,10 @@ class NotesManager {
     container.innerHTML = note.revisions.map((rev, idx) => `
       <div class="history-item-card" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--bg-primary);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
-          <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">📅 ${this.escapeHtml(rev.formattedDate || rev.timestamp)}</span>
+          <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">${this.getIconSvg('📅', 13)} ${this.escapeHtml(rev.formattedDate || rev.timestamp)}</span>
           <div style="display: flex; align-items: center; gap: 4px;">
-            <button class="compare-diff-btn" data-rev-index="${idx}" style="background: var(--bg-search); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; cursor: pointer;">
-              🔍 Compare Diff
+            <button class="compare-diff-btn" data-rev-index="${idx}" style="background: var(--bg-search); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+              ${this.getIconSvg('🔍', 12)} Compare Diff
             </button>
             <button class="restore-version-btn" data-rev-index="${idx}" style="background: var(--primary-yellow); color: #202124; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
               Restore Version
@@ -2769,14 +2805,14 @@ class NotesManager {
 
         if (diffBox.style.display !== 'none') {
           diffBox.style.display = 'none';
-          btn.textContent = '🔍 Compare Diff';
+          btn.innerHTML = `${this.getIconSvg('🔍', 12)} Compare Diff`;
           return;
         }
 
         const editCodeInput = document.getElementById('edit-code-input');
         const currentCode = editCodeInput ? editCodeInput.value : (note.code || '');
 
-        btn.textContent = '✕ Close Diff';
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close Diff`;
         this.renderDiffView(diffBox, rev.code, currentCode, rev.formattedDate || 'Past Revision', 'inline');
       });
     });
@@ -2892,8 +2928,8 @@ class NotesManager {
               <span>Output ${note.executionTime ? `(${note.executionTime})` : ''}</span>
               <div class="code-header-right-actions">
                 ${note.lastOutputIsError ? `
-                  <button class="code-action-icon-btn" id="modal-ai-fix-btn" title="Fix bug with AI" style="background: rgba(234, 67, 53, 0.15); color: #ea4335; border: 1px solid rgba(234, 67, 53, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                    🐛 Fix with AI
+                  <button class="code-action-icon-btn" id="modal-ai-fix-btn" title="Fix bug with AI" style="background: rgba(234, 67, 53, 0.15); color: #ea4335; border: 1px solid rgba(234, 67, 53, 0.3); border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="14" x="8" y="6" rx="4"/><path d="m19 7-3 2"/><path d="m5 7 3 2"/><path d="m19 19-3-2"/><path d="m5 19 3-2"/><path d="M20 13h-4"/><path d="M4 13h4"/><path d="m10 4 1-2"/><path d="m14 4-1-2"/></svg> Fix with AI
                   </button>
                 ` : ''}
                 <button class="code-action-icon-btn" id="modal-copy-output-btn" title="Copy output">
@@ -2916,7 +2952,7 @@ class NotesManager {
           const applyAiCodeBtn = document.getElementById('apply-ai-code-btn');
 
           if (aiDrawer && aiDrawerTitle && aiDrawerContent) {
-            aiDrawerTitle.textContent = '🐛 AI Bug Fix & Diagnosis';
+            aiDrawerTitle.textContent = 'AI Bug Fix & Diagnosis';
             aiDrawerContent.innerHTML = '<span class="compiling-spinner"></span> Diagnosing execution bug and generating fix...';
             aiDrawer.style.display = 'block';
             if (applyAiCodeBtn) applyAiCodeBtn.style.display = 'none';
@@ -3332,28 +3368,28 @@ class NotesManager {
         collectionBannerHtml = `
           <div class="collection-header-banner">
             <div class="collection-header-info">
-              <div class="collection-header-icon">${col.icon || '📚'}</div>
+              <div class="collection-header-icon" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: rgba(26, 115, 232, 0.1); color: var(--accent-color, #1a73e8);">${this.getIconSvg(col.icon, 28)}</div>
               <div>
                 <h2 class="collection-header-title">${this.escapeHtml(col.name)}</h2>
                 <div class="collection-header-desc">${this.escapeHtml(col.description || 'Structured Notebook Collection')}</div>
-                <span class="collection-header-meta">📋 ${noteCount} Snippet${noteCount === 1 ? '' : 's'}</span>
+                <span class="collection-header-meta" style="display: inline-flex; align-items: center; gap: 4px;">${this.getIconSvg('📋', 12)} ${noteCount} Snippet${noteCount === 1 ? '' : 's'}</span>
               </div>
             </div>
             <div class="collection-header-actions">
-              <button class="collection-btn-export-md" data-export-md="${col.id}" title="Download Markdown README.md for GitHub">
-                📄 Export Markdown (.md)
+              <button class="collection-btn-export-md" data-export-md="${col.id}" title="Download Markdown README.md for GitHub" style="display: inline-flex; align-items: center; gap: 6px;">
+                ${this.getIconSvg('📄', 14)} Export Markdown (.md)
               </button>
-              <button class="collection-btn-export-pdf" data-export-pdf="${col.id}" title="Download formatted PDF Cheat Sheet">
-                📕 Export PDF Cheat Sheet
+              <button class="collection-btn-export-pdf" data-export-pdf="${col.id}" title="Download formatted PDF Cheat Sheet" style="display: inline-flex; align-items: center; gap: 6px;">
+                ${this.getIconSvg('📕', 14)} Export PDF Cheat Sheet
               </button>
-              <button class="creator-btn-close" data-manage-col-snippets="${col.id}">
-                ➕ Manage Snippets
+              <button class="creator-btn-close" data-manage-col-snippets="${col.id}" style="display: inline-flex; align-items: center; gap: 6px;">
+                ${this.getIconSvg('➕', 14)} Manage Snippets
               </button>
-              <button class="icon-btn" data-edit-col="${col.id}" title="Edit Collection">
-                ✏️
+              <button class="icon-btn" data-edit-col="${col.id}" title="Edit Collection" style="display: inline-flex; align-items: center; justify-content: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="icon-btn" data-delete-col="${col.id}" title="Delete Collection">
-                🗑️
+              <button class="icon-btn" data-delete-col="${col.id}" title="Delete Collection" style="display: inline-flex; align-items: center; justify-content: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
             </div>
           </div>
