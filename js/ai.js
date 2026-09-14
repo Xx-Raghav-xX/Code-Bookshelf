@@ -15,35 +15,62 @@ class AICodeAssistant {
   }
 
   async callLLM(systemPrompt, userPrompt) {
-    if (this.provider === 'gemini' && this.apiKey) {
-      return await this.callGeminiAPI(systemPrompt, userPrompt);
+    if (this.apiKey) {
+      try {
+        return await this.callGeminiAPI(systemPrompt, userPrompt);
+      } catch (err) {
+        console.warn('Gemini API call failed, falling back to free Pollinations models:', err.message);
+      }
     }
+
     return await this.callPollinationsAPI(systemPrompt, userPrompt);
   }
 
   async callPollinationsAPI(systemPrompt, userPrompt) {
-    const url = 'https://text.pollinations.ai/';
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        model: 'openai',
-        jsonMode: false
-      })
-    });
+    const models = ['openai-fast', 'gpt-oss', 'openai'];
+    let lastErrMessage = '';
 
-    if (!response.ok) {
-      throw new Error(`AI service error (HTTP ${response.status})`);
+    for (const model of models) {
+      try {
+        const url = 'https://text.pollinations.ai/';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            model: model,
+            jsonMode: false
+          })
+        });
+
+        const text = await response.text();
+        if (!response.ok || text.includes('reached its budget') || text.includes('Queue full') || text.includes('"error":')) {
+          console.warn(`Pollinations model ${model} rate-limited or budget error:`, text.slice(0, 120));
+          lastErrMessage = text;
+          continue;
+        }
+
+        if (text && text.trim().length > 0) {
+          return text.trim();
+        }
+      } catch (err) {
+        console.warn(`Pollinations model ${model} fetch exception:`, err.message);
+        lastErrMessage = err.message;
+      }
     }
 
-    const text = await response.text();
-    return text.trim();
+    throw new Error(`The free shared AI service is currently rate-limited or at budget capacity.
+
+💡 **Easy Solution**:
+You can add your own 100% free **Google Gemini API Key** in Settings (⚙️):
+1. Get a free API key instantly at [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Click **⚙️ Settings** in the top navigation bar.
+3. Paste your Gemini API key in the **AI Code Assistant Provider & Key** section and click Save.`);
   }
 
   async callGeminiAPI(systemPrompt, userPrompt) {
@@ -65,7 +92,8 @@ class AICodeAssistant {
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error (HTTP ${response.status})`);
+      const errText = await response.text();
+      throw new Error(`Gemini API error (HTTP ${response.status}): ${errText.slice(0, 150)}`);
     }
 
     const data = await response.json();

@@ -730,6 +730,26 @@ class NotesManager {
     const importFileInput = document.getElementById('settings-import-input');
     const gistBtn = document.getElementById('settings-gist-btn');
     const gistInput = document.getElementById('settings-gist-input');
+    const aiProviderSelect = document.getElementById('settings-ai-provider-select');
+    const aiKeyInput = document.getElementById('settings-ai-apikey-input');
+
+    if (aiProviderSelect) {
+      aiProviderSelect.addEventListener('change', (e) => {
+        const apiKey = aiKeyInput ? aiKeyInput.value.trim() : '';
+        if (window.aiAssistant) {
+          window.aiAssistant.setProvider(e.target.value, apiKey);
+        }
+      });
+    }
+
+    if (aiKeyInput) {
+      aiKeyInput.addEventListener('input', (e) => {
+        const provider = aiProviderSelect ? aiProviderSelect.value : 'free';
+        if (window.aiAssistant) {
+          window.aiAssistant.setProvider(provider, e.target.value.trim());
+        }
+      });
+    }
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => this.closeSettingsModal());
@@ -812,6 +832,15 @@ class NotesManager {
     }
     if (viewSelect) {
       viewSelect.value = this.isListView ? 'list' : 'grid';
+    }
+
+    const aiProviderSelect = document.getElementById('settings-ai-provider-select');
+    const aiKeyInput = document.getElementById('settings-ai-apikey-input');
+    if (aiProviderSelect && window.aiAssistant) {
+      aiProviderSelect.value = window.aiAssistant.provider || 'free';
+    }
+    if (aiKeyInput && window.aiAssistant) {
+      aiKeyInput.value = window.aiAssistant.apiKey || '';
     }
 
     settingsModal.classList.add('active');
