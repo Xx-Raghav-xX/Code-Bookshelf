@@ -234,6 +234,9 @@ class KeepNavigationComponent {
         const headerRes = await fetch('html/header.html');
         if (headerRes.ok) {
           headerContainer.innerHTML = await headerRes.text();
+          if (window.googleAuth) {
+            window.googleAuth.setupUI();
+          }
         }
       }
 
