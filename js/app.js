@@ -100,8 +100,14 @@ class KeepNavigationComponent {
   onSectionChange(section) {
     const titleElem = document.getElementById('active-section-title');
     if (titleElem) {
-      const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
-      titleElem.textContent = formattedTitle === 'Labels' ? 'Edit Labels' : formattedTitle;
+      if (section && section.startsWith('collection_')) {
+        const colId = section.replace('collection_', '');
+        const col = window.notesManager ? window.notesManager.collections.find(c => c.id === colId) : null;
+        titleElem.textContent = col ? col.name : 'Collection';
+      } else if (section) {
+        const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
+        titleElem.textContent = formattedTitle === 'Labels' ? 'Edit Labels' : formattedTitle;
+      }
     }
 
     if (window.notesManager) {

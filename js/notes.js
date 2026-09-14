@@ -6,6 +6,7 @@ class NotesManager {
   constructor() {
     this.notes = this.loadFromStorage();
     this.labels = this.loadLabelsFromStorage();
+    this.collections = this.loadCollectionsFromStorage();
     
     // Layout & Filter State
     this.isListView = localStorage.getItem('keep-list-view') === 'true';
@@ -21,7 +22,7 @@ class NotesManager {
     this.selectedLabels = [];
     this.selectedReminder = null;
 
-    this.currentView = 'notes'; // 'notes', 'reminders', 'archive', 'bin', or 'label_<name>'
+    this.currentView = 'notes'; // 'notes', 'reminders', 'archive', 'bin', 'favorites', 'label_<name>', 'collection_<id>'
     this.searchQuery = '';
 
     // Advanced Note Creator State
@@ -35,6 +36,9 @@ class NotesManager {
     // Currently Editing Note ID & Dragging Note ID
     this.editingNoteId = null;
     this.draggedNoteId = null;
+
+    // Active collection being managed
+    this.activeManageCollectionId = null;
 
     // Canvas State
     this.drawingColor = '#202124';
@@ -53,6 +57,11 @@ class NotesManager {
   getLabelsStorageKey() {
     const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
     return userId ? `keep-labels-${userId}` : 'keep-labels';
+  }
+
+  getCollectionsStorageKey() {
+    const userId = window.googleAuth ? window.googleAuth.getCurrentUserId() : '';
+    return userId ? `keep-collections-${userId}` : 'keep-collections';
   }
 
   loadFromStorage() {
@@ -94,6 +103,56 @@ class NotesManager {
     }
   }
 
+  loadCollectionsFromStorage() {
+    try {
+      const data = localStorage.getItem(this.getCollectionsStorageKey());
+      if (data) {
+        const cols = JSON.parse(data);
+        if (Array.isArray(cols) && cols.length > 0) return cols;
+      }
+    } catch (e) {
+      console.error('Failed to load collections:', e);
+    }
+
+    return [
+      {
+        id: 'col_leetcode_75',
+        name: 'LeetCode 75 Patterns',
+        description: 'Top algorithm patterns & problem-solving code templates for technical interviews',
+        icon: '⚡',
+        noteIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'col_react_hooks',
+        name: 'React Custom Hooks',
+        description: 'Useful reusable Hooks for production React applications',
+        icon: '⚛️',
+        noteIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'col_system_design',
+        name: 'System Design Cheatsheet',
+        description: 'Core architectural principles, caching, and scalability code references',
+        icon: '🏗️',
+        noteIds: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+  }
+
+  saveCollectionsToStorage() {
+    try {
+      localStorage.setItem(this.getCollectionsStorageKey(), JSON.stringify(this.collections));
+    } catch (e) {
+      console.error('Failed to save collections:', e);
+    }
+  }
+
   init() {
     this.initToast();
     this.initViewToggle();
@@ -110,12 +169,16 @@ class NotesManager {
     this.initEditLabelsModal();
     this.initEditNoteModal();
     this.initCommandPalette();
+    this.initCollections();
+    this.renderSidebarCollections();
 
     // Listen for auth changes to dynamically switch notebook storage
     window.addEventListener('auth:change', (e) => {
       this.notes = this.loadFromStorage();
       this.labels = this.loadLabelsFromStorage();
+      this.collections = this.loadCollectionsFromStorage();
       this.renderSidebarLabels();
+      this.renderSidebarCollections();
       this.render();
 
       const user = e.detail ? e.detail.user : null;
@@ -1224,6 +1287,391 @@ class NotesManager {
     });
   }
 
+  renderSidebarCollections() {
+    const container = document.getElementById('sidebar-dynamic-collections');
+    if (!container) return;
+
+    container.innerHTML = this.collections.map(col => {
+      const noteCount = (col.noteIds || []).filter(id => this.notes.some(n => n.id === id && !n.isArchived && !n.isBinned)).length;
+      return `
+        <a href="#col-${col.id}" class="nav-item ${this.currentView === 'collection_' + col.id ? 'active' : ''}" data-nav="collection_${col.id}">
+          <span class="nav-item-icon" style="font-size: 18px;">${col.icon || '📚'}</span>
+          <span class="nav-item-label">${this.escapeHtml(col.name)}</span>
+          <span class="collection-count-badge">${noteCount}</span>
+        </a>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        const section = item.getAttribute('data-nav');
+        
+        const titleElem = document.getElementById('active-section-title');
+        const colId = section.replace('collection_', '');
+        const col = this.collections.find(c => c.id === colId);
+        if (titleElem && col) titleElem.textContent = col.name;
+
+        this.setView(section);
+      });
+    });
+  }
+
+  initCollections() {
+    const createBtn = document.getElementById('create-collection-btn');
+    const closeBtn = document.getElementById('close-collection-modal-btn');
+    const cancelBtn = document.getElementById('cancel-collection-modal-btn');
+    const saveBtn = document.getElementById('save-collection-modal-btn');
+
+    if (createBtn) {
+      createBtn.addEventListener('click', () => {
+        this.openCollectionModal();
+      });
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', () => this.closeCollectionModal());
+    if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeCollectionModal());
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const idInput = document.getElementById('collection-modal-id');
+        const nameInput = document.getElementById('collection-modal-name');
+        const descInput = document.getElementById('collection-modal-desc');
+        const iconSelect = document.getElementById('collection-modal-icon');
+
+        const name = nameInput.value.trim();
+        if (!name) {
+          this.showToast('Please enter a collection name.');
+          return;
+        }
+
+        const id = idInput.value || 'col_' + Date.now();
+        const existingIdx = this.collections.findIndex(c => c.id === id);
+
+        if (existingIdx >= 0) {
+          this.collections[existingIdx] = {
+            ...this.collections[existingIdx],
+            name,
+            description: descInput.value.trim(),
+            icon: iconSelect.value,
+            updatedAt: new Date().toISOString()
+          };
+          this.showToast(`Updated collection "${name}"`);
+        } else {
+          this.collections.push({
+            id,
+            name,
+            description: descInput.value.trim(),
+            icon: iconSelect.value,
+            noteIds: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+          this.showToast(`Created collection "${name}"`);
+        }
+
+        this.saveCollectionsToStorage();
+        this.renderSidebarCollections();
+        this.closeCollectionModal();
+        if (this.currentView === 'collection_' + id) {
+          this.render();
+        }
+      });
+    }
+
+    // Manage Snippets Modal
+    const doneManageBtn = document.getElementById('done-manage-snippets-modal-btn');
+    const closeManageBtn = document.getElementById('close-manage-snippets-modal-btn');
+    const searchManageInput = document.getElementById('manage-snippets-search');
+
+    if (doneManageBtn) doneManageBtn.addEventListener('click', () => this.closeManageSnippetsModal());
+    if (closeManageBtn) closeManageBtn.addEventListener('click', () => this.closeManageSnippetsModal());
+
+    if (searchManageInput) {
+      searchManageInput.addEventListener('input', (e) => {
+        this.renderManageSnippetsList(e.target.value);
+      });
+    }
+  }
+
+  openCollectionModal(collectionId = null) {
+    const modal = document.getElementById('collection-modal');
+    if (!modal) return;
+
+    const titleElem = document.getElementById('collection-modal-title');
+    const idInput = document.getElementById('collection-modal-id');
+    const nameInput = document.getElementById('collection-modal-name');
+    const descInput = document.getElementById('collection-modal-desc');
+    const iconSelect = document.getElementById('collection-modal-icon');
+
+    if (collectionId) {
+      const col = this.collections.find(c => c.id === collectionId);
+      if (col) {
+        titleElem.textContent = 'Edit Collection';
+        idInput.value = col.id;
+        nameInput.value = col.name;
+        descInput.value = col.description || '';
+        iconSelect.value = col.icon || '📚';
+      }
+    } else {
+      titleElem.textContent = 'Create Collection';
+      idInput.value = '';
+      nameInput.value = '';
+      descInput.value = '';
+      iconSelect.value = '📚';
+    }
+
+    modal.classList.add('show');
+    nameInput.focus();
+  }
+
+  closeCollectionModal() {
+    const modal = document.getElementById('collection-modal');
+    if (modal) modal.classList.remove('show');
+  }
+
+  openManageSnippetsModal(collectionId) {
+    this.activeManageCollectionId = collectionId;
+    const modal = document.getElementById('collection-manage-snippets-modal');
+    if (!modal) return;
+
+    const col = this.collections.find(c => c.id === collectionId);
+    const titleElem = document.getElementById('collection-manage-title');
+    if (titleElem && col) {
+      titleElem.textContent = `Manage "${col.name}" Snippets`;
+    }
+
+    this.renderManageSnippetsList();
+    modal.classList.add('show');
+  }
+
+  closeManageSnippetsModal() {
+    const modal = document.getElementById('collection-manage-snippets-modal');
+    if (modal) modal.classList.remove('show');
+    this.activeManageCollectionId = null;
+    this.renderSidebarCollections();
+    this.render();
+  }
+
+  renderManageSnippetsList(filterQuery = '') {
+    const container = document.getElementById('manage-snippets-list');
+    if (!container || !this.activeManageCollectionId) return;
+
+    const col = this.collections.find(c => c.id === this.activeManageCollectionId);
+    if (!col) return;
+
+    const query = (filterQuery || '').toLowerCase();
+    const availableNotes = this.notes.filter(n => !n.isArchived && !n.isBinned);
+    const filteredNotes = availableNotes.filter(n => {
+      const title = (n.title || '').toLowerCase();
+      const body = (n.body || '').toLowerCase();
+      const code = (n.code || '').toLowerCase();
+      const lang = (n.codeLanguage || '').toLowerCase();
+      return title.includes(query) || body.includes(query) || code.includes(query) || lang.includes(query);
+    });
+
+    if (filteredNotes.length === 0) {
+      container.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); padding: 12px; text-align: center;">No matching code snippets found.</div>';
+      return;
+    }
+
+    container.innerHTML = filteredNotes.map(n => {
+      const isChecked = (col.noteIds || []).includes(n.id);
+      const title = n.title || (n.isCode ? `${n.codeLanguage ? n.codeLanguage.toUpperCase() : 'Code'} Snippet` : 'Untitled Note');
+      return `
+        <label style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+            <input type="checkbox" class="manage-snippet-checkbox" data-note-id="${n.id}" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+            <div>
+              <div style="font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px;">${this.escapeHtml(title)}</div>
+              <div style="font-size: 11px; color: var(--text-secondary); display: flex; gap: 8px;">
+                ${n.codeLanguage ? `<span style="text-transform: uppercase;">${n.codeLanguage}</span>` : ''}
+                <span>${n.code ? `${n.code.split('\n').length} lines` : 'Text'}</span>
+              </div>
+            </div>
+          </div>
+          <span style="font-size: 12px; font-weight: 600; color: ${isChecked ? '#1a73e8' : 'var(--text-secondary)'};">${isChecked ? 'Included' : 'Add'}</span>
+        </label>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.manage-snippet-checkbox').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const noteId = chk.getAttribute('data-note-id');
+        if (!col.noteIds) col.noteIds = [];
+
+        if (chk.checked) {
+          if (!col.noteIds.includes(noteId)) col.noteIds.push(noteId);
+        } else {
+          col.noteIds = col.noteIds.filter(id => id !== noteId);
+        }
+
+        col.updatedAt = new Date().toISOString();
+        this.saveCollectionsToStorage();
+        this.renderSidebarCollections();
+      });
+    });
+  }
+
+  deleteCollection(collectionId) {
+    const col = this.collections.find(c => c.id === collectionId);
+    if (!col) return;
+
+    if (confirm(`Are you sure you want to delete collection "${col.name}"? (Your code snippets will not be deleted)`)) {
+      this.collections = this.collections.filter(c => c.id !== collectionId);
+      this.saveCollectionsToStorage();
+      this.showToast(`Deleted collection "${col.name}"`);
+      this.renderSidebarCollections();
+      this.setView('notes');
+    }
+  }
+
+  exportCollectionMarkdown(collectionId) {
+    const collection = this.collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    const notesInCol = (collection.noteIds || [])
+      .map(id => this.notes.find(n => n.id === id))
+      .filter(Boolean);
+
+    let mdContent = `# ${collection.icon || '📚'} ${collection.name}\n\n`;
+    if (collection.description) {
+      mdContent += `> ${collection.description}\n\n`;
+    }
+
+    mdContent += `*Generated by [Code Bookshelf](https://code-bookshelf.vercel.app) on ${new Date().toLocaleDateString()} • Total Snippets: ${notesInCol.length}*\n\n`;
+
+    if (notesInCol.length > 0) {
+      mdContent += `## 📋 Table of Contents\n\n`;
+      notesInCol.forEach((note, idx) => {
+        const title = note.title || `Snippet #${idx + 1}`;
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        mdContent += `${idx + 1}. [${title}](#${slug})\n`;
+      });
+      mdContent += `\n---\n\n`;
+
+      notesInCol.forEach((note, idx) => {
+        const title = note.title || `Snippet #${idx + 1}`;
+        mdContent += `### ${idx + 1}. ${title}\n\n`;
+        
+        if (note.isCode && note.code) {
+          const lang = note.codeLanguage || 'text';
+          mdContent += `\`\`\`${lang}\n${note.code}\n\`\`\`\n\n`;
+        }
+
+        if (note.body) {
+          mdContent += `${note.body}\n\n`;
+        }
+
+        if (note.isChecklist && note.checklistItems && note.checklistItems.length) {
+          note.checklistItems.forEach(item => {
+            mdContent += `- [${item.completed ? 'x' : ' '}] ${item.text}\n`;
+          });
+          mdContent += `\n`;
+        }
+
+        if (note.labels && note.labels.length) {
+          mdContent += `**Tags:** ${note.labels.map(l => `\`#${l}\``).join(' ')}\n\n`;
+        }
+
+        mdContent += `---\n\n`;
+      });
+    } else {
+      mdContent += `*No snippets in this collection yet.*\n`;
+    }
+
+    const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const fileName = (collection.name || 'collection').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.md';
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    this.showToast(`Exported "${collection.name}" to Markdown file!`);
+  }
+
+  exportCollectionPDF(collectionId) {
+    const collection = this.collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    const notesInCol = (collection.noteIds || [])
+      .map(id => this.notes.find(n => n.id === id))
+      .filter(Boolean);
+
+    if (notesInCol.length === 0) {
+      this.showToast('Collection is empty! Add snippets before exporting PDF.');
+      return;
+    }
+
+    this.showToast('Generating PDF Cheat Sheet... Please wait.');
+
+    const pdfContainer = document.createElement('div');
+    pdfContainer.className = 'pdf-export-document';
+    pdfContainer.style.padding = '24px';
+    pdfContainer.style.fontFamily = "'Roboto', 'Google Sans', sans-serif";
+    pdfContainer.style.color = '#202124';
+    pdfContainer.style.backgroundColor = '#ffffff';
+
+    let pdfHtml = `
+      <div style="border-bottom: 2px solid #1A73E8; padding-bottom: 12px; margin-bottom: 20px;">
+        <h1 style="font-size: 24px; color: #1A73E8; margin: 0 0 6px 0;">${collection.icon || '📚'} ${this.escapeHtml(collection.name)}</h1>
+        ${collection.description ? `<p style="font-size: 14px; color: #5f6368; margin: 0 0 8px 0;">${this.escapeHtml(collection.description)}</p>` : ''}
+        <div style="font-size: 12px; color: #80868b;">Code Bookshelf Cheat Sheet • ${notesInCol.length} Snippets • Generated on ${new Date().toLocaleDateString()}</div>
+      </div>
+    `;
+
+    notesInCol.forEach((note, idx) => {
+      const title = note.title || `Snippet #${idx + 1}`;
+      pdfHtml += `
+        <div style="margin-bottom: 20px; page-break-inside: avoid; border: 1px solid #dadce0; border-radius: 8px; overflow: hidden; background: #fafafa;">
+          <div style="background: #f1f3f4; padding: 10px 14px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 15px; color: #202124;">${idx + 1}. ${this.escapeHtml(title)}</strong>
+            ${note.codeLanguage ? `<span style="background: #1A73E8; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${note.codeLanguage}</span>` : ''}
+          </div>
+          <div style="padding: 12px 14px;">
+            ${note.isCode && note.code ? `
+              <pre style="background: #282a36; color: #f8f8f2; padding: 12px; border-radius: 6px; font-family: 'Consolas', 'Fira Code', monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; margin: 0 0 10px 0;"><code>${this.escapeHtml(note.code)}</code></pre>
+            ` : ''}
+            ${note.body ? `<div style="font-size: 13px; color: #3c4043; line-height: 1.5; margin-bottom: 8px;">${this.escapeHtml(note.body)}</div>` : ''}
+            ${note.labels && note.labels.length ? `<div style="font-size: 11px; color: #1a73e8;">Tags: ${note.labels.map(l => `#${this.escapeHtml(l)}`).join(' ')}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    pdfContainer.innerHTML = pdfHtml;
+    document.body.appendChild(pdfContainer);
+
+    const fileName = `${(collection.name || 'cheat-sheet').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-cheatsheet.pdf`;
+
+    if (typeof html2pdf !== 'undefined') {
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(pdfContainer).save().then(() => {
+        document.body.removeChild(pdfContainer);
+        this.showToast('PDF Cheat Sheet downloaded successfully!');
+      }).catch(err => {
+        console.error('PDF export error:', err);
+        document.body.removeChild(pdfContainer);
+        this.showToast('Failed to export PDF.');
+      });
+    } else {
+      window.print();
+      document.body.removeChild(pdfContainer);
+    }
+  }
+
   toggleStar(id) {
     const note = this.notes.find(n => n.id === id);
     if (note) {
@@ -2225,6 +2673,44 @@ class NotesManager {
     const mainContainer = document.getElementById('notes-workspace');
     if (!mainContainer) return;
 
+    let collectionBannerHtml = '';
+    if (this.currentView.startsWith('collection_')) {
+      const colId = this.currentView.replace('collection_', '');
+      const col = this.collections.find(c => c.id === colId);
+      if (col) {
+        const noteCount = (col.noteIds || []).filter(id => this.notes.some(n => n.id === id && !n.isArchived && !n.isBinned)).length;
+        collectionBannerHtml = `
+          <div class="collection-header-banner">
+            <div class="collection-header-info">
+              <div class="collection-header-icon">${col.icon || '📚'}</div>
+              <div>
+                <h2 class="collection-header-title">${this.escapeHtml(col.name)}</h2>
+                <div class="collection-header-desc">${this.escapeHtml(col.description || 'Structured Notebook Collection')}</div>
+                <span class="collection-header-meta">📋 ${noteCount} Snippet${noteCount === 1 ? '' : 's'}</span>
+              </div>
+            </div>
+            <div class="collection-header-actions">
+              <button class="collection-btn-export-md" data-export-md="${col.id}" title="Download Markdown README.md for GitHub">
+                📄 Export Markdown (.md)
+              </button>
+              <button class="collection-btn-export-pdf" data-export-pdf="${col.id}" title="Download formatted PDF Cheat Sheet">
+                📕 Export PDF Cheat Sheet
+              </button>
+              <button class="creator-btn-close" data-manage-col-snippets="${col.id}">
+                ➕ Manage Snippets
+              </button>
+              <button class="icon-btn" data-edit-col="${col.id}" title="Edit Collection">
+                ✏️
+              </button>
+              <button class="icon-btn" data-delete-col="${col.id}" title="Delete Collection">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
     let filtered = this.notes.filter(n => {
       if (this.currentView === 'archive') return n.isArchived && !n.isBinned;
       if (this.currentView === 'bin') return n.isBinned;
@@ -2233,6 +2719,12 @@ class NotesManager {
       if (this.currentView.startsWith('label_')) {
         const targetLabel = this.currentView.replace('label_', '');
         return !n.isArchived && !n.isBinned && n.labels && n.labels.includes(targetLabel);
+      }
+      if (this.currentView.startsWith('collection_')) {
+        const colId = this.currentView.replace('collection_', '');
+        const col = this.collections.find(c => c.id === colId);
+        if (!col) return false;
+        return !n.isArchived && !n.isBinned && (col.noteIds || []).includes(n.id);
       }
       return !n.isArchived && !n.isBinned;
     });
@@ -2295,7 +2787,7 @@ class NotesManager {
     }
 
     if (filtered.length === 0) {
-      mainContainer.innerHTML = `
+      mainContainer.innerHTML = collectionBannerHtml + `
         <div class="empty-notes-msg">
           <svg viewBox="0 0 24 24" focusable="false">
             <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 9h8v2h-8V9zm0 3h8v2h-8v-2zm0-6h8v2h-8V6z"></path>
@@ -2303,6 +2795,7 @@ class NotesManager {
           <p>${this.getEmptyMessage()}</p>
         </div>
       `;
+      this.attachCollectionBannerListeners(mainContainer);
       return;
     }
 
@@ -2345,8 +2838,31 @@ class NotesManager {
       `;
     }
 
-    mainContainer.innerHTML = html;
+    mainContainer.innerHTML = collectionBannerHtml + html;
+    this.attachCollectionBannerListeners(mainContainer);
     this.attachCardEventListeners();
+  }
+
+  attachCollectionBannerListeners(container) {
+    container.querySelectorAll('[data-export-md]').forEach(btn => {
+      btn.addEventListener('click', () => this.exportCollectionMarkdown(btn.getAttribute('data-export-md')));
+    });
+
+    container.querySelectorAll('[data-export-pdf]').forEach(btn => {
+      btn.addEventListener('click', () => this.exportCollectionPDF(btn.getAttribute('data-export-pdf')));
+    });
+
+    container.querySelectorAll('[data-manage-col-snippets]').forEach(btn => {
+      btn.addEventListener('click', () => this.openManageSnippetsModal(btn.getAttribute('data-manage-col-snippets')));
+    });
+
+    container.querySelectorAll('[data-edit-col]').forEach(btn => {
+      btn.addEventListener('click', () => this.openCollectionModal(btn.getAttribute('data-edit-col')));
+    });
+
+    container.querySelectorAll('[data-delete-col]').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteCollection(btn.getAttribute('data-delete-col')));
+    });
   }
 
   getEmptyMessage() {
@@ -2356,6 +2872,7 @@ class NotesManager {
     if (this.currentView === 'favorites') return 'No favorited notes yet. Click the ⭐ star icon on any note card to add it to Favorites!';
     if (this.currentView === 'reminders') return 'Notes with upcoming reminders will appear here';
     if (this.currentView.startsWith('label_')) return `No notes with label "${this.currentView.replace('label_', '')}"`;
+    if (this.currentView.startsWith('collection_')) return 'No snippets in this collection yet. Click "➕ Manage Snippets" above to add code snippets!';
     return 'Notes you add appear here';
   }
 
@@ -2528,6 +3045,24 @@ class NotesManager {
                 <div class="color-circle" data-change-color="grey" style="background-color: #e8eaed;"></div>
               </div>
             </div>
+            <div class="tooltip-container" data-tooltip="Add to collection" style="position: relative;">
+              <button class="icon-btn card-collection-btn" data-action="collection" aria-label="Add to collection">
+                <svg viewBox="0 0 24 24" width="18" height="18" focusable="false">
+                  <path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM12 5.5l1.45 2.94 3.25.47-2.35 2.29.55 3.24L12 12.91l-2.9 1.52.55-3.24-2.35-2.29 3.25-.47L12 5.5z"/>
+                </svg>
+              </button>
+              <div class="card-collection-picker-menu" data-card-collection-menu="${note.id}">
+                ${this.collections.length === 0 ? '<div style="font-size: 11px; color: var(--text-secondary); padding: 4px;">No collections created</div>' : this.collections.map(col => {
+                  const inCol = (col.noteIds || []).includes(note.id);
+                  return `
+                    <label class="collection-picker-item">
+                      <input type="checkbox" class="card-collection-checkbox" data-col-id="${col.id}" data-note-id="${note.id}" ${inCol ? 'checked' : ''} style="cursor: pointer;">
+                      <span>${col.icon || '📚'} ${this.escapeHtml(col.name)}</span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+            </div>
             <div class="tooltip-container" data-tooltip="Duplicate note">
               <button class="icon-btn" data-action="duplicate" aria-label="Duplicate note">
                 <svg viewBox="0 0 24 24" focusable="false">
@@ -2587,12 +3122,51 @@ class NotesManager {
             e.target.closest('[data-stdin-note]') ||
             e.target.closest('.chip-remove-btn') || 
             e.target.closest('.card-checklist-checkbox') ||
-            e.target.closest('.card-color-picker-menu')) return;
+            e.target.closest('.card-color-picker-menu') ||
+            e.target.closest('.card-collection-picker-menu')) return;
 
         if (note && this.currentView !== 'bin') {
           this.openEditNoteModal(note);
         }
       });
+
+      // Card Collection Picker Event Listeners
+      const colBtn = card.querySelector('.card-collection-btn');
+      const colMenu = card.querySelector(`[data-card-collection-menu="${id}"]`);
+      if (colBtn && colMenu) {
+        colBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.card-collection-picker-menu.show').forEach(m => {
+            if (m !== colMenu) m.classList.remove('show');
+          });
+          colMenu.classList.toggle('show');
+        });
+
+        colMenu.querySelectorAll('.card-collection-checkbox').forEach(chk => {
+          chk.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const colId = chk.getAttribute('data-col-id');
+            const noteId = chk.getAttribute('data-note-id');
+            const col = this.collections.find(c => c.id === colId);
+            if (col) {
+              if (!col.noteIds) col.noteIds = [];
+              if (chk.checked) {
+                if (!col.noteIds.includes(noteId)) col.noteIds.push(noteId);
+                this.showToast(`Added to "${col.name}"`);
+              } else {
+                col.noteIds = col.noteIds.filter(i => i !== noteId);
+                this.showToast(`Removed from "${col.name}"`);
+              }
+              col.updatedAt = new Date().toISOString();
+              this.saveCollectionsToStorage();
+              this.renderSidebarCollections();
+              if (this.currentView === 'collection_' + colId) {
+                this.render();
+              }
+            }
+          });
+        });
+      }
 
       // STDIN Input Handler
       card.querySelectorAll('[data-stdin-note]').forEach(inp => {
